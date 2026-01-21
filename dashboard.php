@@ -52,6 +52,12 @@ if (tiene_permiso('caja', 'ver')) {
     $estadisticas['cajas_abiertas'] = db_count('cajas', "estado = 'abierta' AND $where_caja");
 }
 
+// Fecha en español
+$dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+$meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+$fecha_obj = new DateTime();
+$fecha_texto = $dias[$fecha_obj->format('w')] . ', ' . $fecha_obj->format('d') . ' de ' . $meses[$fecha_obj->format('n')-1] . ' de ' . $fecha_obj->format('Y');
+
 // Título de página
 $titulo_pagina = 'Dashboard';
 ?>
@@ -66,132 +72,235 @@ $titulo_pagina = 'Dashboard';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
     
     <style>
-        body {
-            background: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --color-dorado: #D4AF37;
+            --color-dorado-oscuro: #b8941f;
+            --color-azul: #1e3a8a;
+            --color-azul-claro: #3b82f6;
+            --color-negro: #1a1a1a;
+            --color-gris: #4b5563;
+            --color-gris-claro: #6b7280;
+            --color-plateado: #C0C0C0;
+            --color-blanco: #FFFFFF;
+            --color-fondo: #f9fafb;
+            --color-verde: #059669;
+            --color-rojo: #dc2626;
+            --color-amarillo: #f59e0b;
         }
         
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: var(--color-fondo);
+            font-family: 'Inter', sans-serif;
+            color: var(--color-negro);
+        }
+        
+        /* NAVBAR */
         .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: var(--color-azul);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 12px 0;
+            border-bottom: 3px solid var(--color-dorado);
         }
         
         .navbar-brand {
             font-weight: 700;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+            color: var(--color-blanco) !important;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
+        .navbar-brand img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+        
+        .navbar-brand i {
+            font-size: 32px;
+            color: var(--color-dorado);
+        }
+        
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: var(--color-dorado) !important;
+        }
+        
+        .dropdown-menu {
+            border: 2px solid var(--color-dorado);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        /* CONTENIDO PRINCIPAL */
         .main-content {
             padding: 30px 0;
+            min-height: calc(100vh - 200px);
         }
         
+        /* TARJETA DE BIENVENIDA */
         .welcome-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px;
+            background: var(--color-azul);
+            color: var(--color-blanco);
+            border-radius: 12px;
             padding: 30px;
             margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
+            border: 2px solid var(--color-dorado);
         }
         
         .welcome-card h1 {
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 10px;
+            font-family: 'Montserrat', sans-serif;
         }
         
         .welcome-card p {
-            opacity: 0.9;
+            opacity: 0.95;
             margin: 0;
+            font-size: 15px;
         }
         
+        /* TARJETAS DE ESTADÍSTICAS */
         .stat-card {
-            background: white;
-            border-radius: 15px;
+            background: var(--color-blanco);
+            border-radius: 10px;
             padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             transition: all 0.3s;
-            border-left: 4px solid;
+            border-left: 5px solid;
+            border-top: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
         }
         
         .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
         }
         
-        .stat-card.primary { border-color: #667eea; }
-        .stat-card.success { border-color: #28a745; }
-        .stat-card.warning { border-color: #ffc107; }
-        .stat-card.danger { border-color: #dc3545; }
-        .stat-card.info { border-color: #17a2b8; }
+        .stat-card.dorado { border-left-color: var(--color-dorado); }
+        .stat-card.azul { border-left-color: var(--color-azul); }
+        .stat-card.verde { border-left-color: var(--color-verde); }
+        .stat-card.amarillo { border-left-color: var(--color-amarillo); }
+        .stat-card.rojo { border-left-color: var(--color-rojo); }
+        .stat-card.plateado { border-left-color: var(--color-plateado); }
         
         .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
+            width: 55px;
+            height: 55px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
+            font-size: 26px;
             margin-bottom: 15px;
         }
         
-        .stat-card.primary .stat-icon { background: rgba(102, 126, 234, 0.1); color: #667eea; }
-        .stat-card.success .stat-icon { background: rgba(40, 167, 69, 0.1); color: #28a745; }
-        .stat-card.warning .stat-icon { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
-        .stat-card.danger .stat-icon { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
-        .stat-card.info .stat-icon { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+        .stat-card.dorado .stat-icon { background: #fffbeb; color: var(--color-dorado); }
+        .stat-card.azul .stat-icon { background: #eff6ff; color: var(--color-azul); }
+        .stat-card.verde .stat-icon { background: #ecfdf5; color: var(--color-verde); }
+        .stat-card.amarillo .stat-icon { background: #fffbeb; color: var(--color-amarillo); }
+        .stat-card.rojo .stat-icon { background: #fee; color: var(--color-rojo); }
+        .stat-card.plateado .stat-icon { background: #f3f4f6; color: var(--color-gris); }
         
         .stat-value {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 700;
             margin: 10px 0;
+            color: var(--color-negro);
+            font-family: 'Montserrat', sans-serif;
         }
         
         .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
+            color: var(--color-gris);
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            font-weight: 600;
         }
         
+        /* ACCIONES RÁPIDAS */
         .quick-actions {
-            background: white;
-            border-radius: 15px;
+            background: var(--color-blanco);
+            border-radius: 10px;
             padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e5e7eb;
         }
         
         .quick-actions h5 {
             margin-bottom: 20px;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--color-negro);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 18px;
+            border-bottom: 2px solid var(--color-dorado);
+            padding-bottom: 10px;
         }
         
         .quick-action-btn {
             display: block;
             width: 100%;
-            padding: 15px;
+            padding: 14px 16px;
             margin-bottom: 10px;
-            border-radius: 10px;
+            border-radius: 8px;
             text-decoration: none;
-            color: #495057;
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
+            color: var(--color-negro);
+            background: var(--color-fondo);
+            border: 2px solid #e5e7eb;
             transition: all 0.3s;
+            font-weight: 500;
         }
         
         .quick-action-btn:hover {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
+            background: var(--color-dorado);
+            color: var(--color-blanco);
+            border-color: var(--color-dorado);
             transform: translateX(5px);
         }
         
         .quick-action-btn i {
             margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* ALERTAS */
+        .alert {
+            border-radius: 8px;
+            border: 2px solid;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #ecfdf5;
+            border-color: var(--color-verde);
+            color: #065f46;
+        }
+        
+        .alert-danger {
+            background: #fee;
+            border-color: var(--color-rojo);
+            color: #991b1b;
         }
     </style>
 </head>
@@ -200,7 +309,11 @@ $titulo_pagina = 'Dashboard';
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="dashboard.php">
-                <i class="bi bi-gem me-2"></i>
+                <?php if (file_exists('assets/img/logo-torre-fuerte.png')): ?>
+                    <img src="assets/img/logo-torre-fuerte.png" alt="Logo">
+                <?php else: ?>
+                    <i class="bi bi-gem"></i>
+                <?php endif; ?>
                 <?php echo SISTEMA_NOMBRE; ?>
             </a>
             
@@ -270,12 +383,7 @@ $titulo_pagina = 'Dashboard';
             </h1>
             <p>
                 <i class="bi bi-calendar3 me-2"></i>
-                <?php
-                $fecha = new DateTime();
-                $dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-                $meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-                echo $dias[$fecha->format('w')] . ', ' . $fecha->format('d') . ' de ' . $meses[$fecha->format('n')-1] . ' de ' . $fecha->format('Y');
-                ?>
+                <?php echo $fecha_texto; ?>
                 <span class="ms-3">
                     <i class="bi bi-clock me-2"></i>
                     <?php echo date('h:i A'); ?>
@@ -290,7 +398,7 @@ $titulo_pagina = 'Dashboard';
                     <!-- Total Productos -->
                     <?php if (tiene_permiso('inventario', 'ver') || tiene_permiso('productos', 'ver')): ?>
                     <div class="col-md-4">
-                        <div class="stat-card primary">
+                        <div class="stat-card dorado">
                             <div class="stat-icon">
                                 <i class="bi bi-box-seam"></i>
                             </div>
@@ -303,7 +411,7 @@ $titulo_pagina = 'Dashboard';
                     <!-- Total Clientes -->
                     <?php if (tiene_permiso('clientes', 'ver')): ?>
                     <div class="col-md-4">
-                        <div class="stat-card success">
+                        <div class="stat-card azul">
                             <div class="stat-icon">
                                 <i class="bi bi-people"></i>
                             </div>
@@ -316,7 +424,7 @@ $titulo_pagina = 'Dashboard';
                     <!-- Ventas Hoy -->
                     <?php if (tiene_permiso('ventas', 'ver')): ?>
                     <div class="col-md-4">
-                        <div class="stat-card info">
+                        <div class="stat-card plateado">
                             <div class="stat-icon">
                                 <i class="bi bi-cart-check"></i>
                             </div>
@@ -326,7 +434,7 @@ $titulo_pagina = 'Dashboard';
                     </div>
                     
                     <div class="col-md-4">
-                        <div class="stat-card success">
+                        <div class="stat-card verde">
                             <div class="stat-icon">
                                 <i class="bi bi-cash-coin"></i>
                             </div>
@@ -339,7 +447,7 @@ $titulo_pagina = 'Dashboard';
                     <!-- Stock Bajo -->
                     <?php if (tiene_permiso('inventario', 'ver')): ?>
                     <div class="col-md-4">
-                        <div class="stat-card warning">
+                        <div class="stat-card amarillo">
                             <div class="stat-icon">
                                 <i class="bi bi-exclamation-triangle"></i>
                             </div>
@@ -352,7 +460,7 @@ $titulo_pagina = 'Dashboard';
                     <!-- Trabajos Taller -->
                     <?php if (tiene_permiso('taller', 'ver')): ?>
                     <div class="col-md-4">
-                        <div class="stat-card warning">
+                        <div class="stat-card amarillo">
                             <div class="stat-icon">
                                 <i class="bi bi-tools"></i>
                             </div>
@@ -362,7 +470,7 @@ $titulo_pagina = 'Dashboard';
                     </div>
                     
                     <div class="col-md-4">
-                        <div class="stat-card success">
+                        <div class="stat-card verde">
                             <div class="stat-icon">
                                 <i class="bi bi-check-circle"></i>
                             </div>
@@ -375,7 +483,7 @@ $titulo_pagina = 'Dashboard';
                     <!-- Cajas Abiertas -->
                     <?php if (tiene_permiso('caja', 'ver')): ?>
                     <div class="col-md-4">
-                        <div class="stat-card <?php echo $estadisticas['cajas_abiertas'] > 0 ? 'success' : 'danger'; ?>">
+                        <div class="stat-card <?php echo $estadisticas['cajas_abiertas'] > 0 ? 'verde' : 'rojo'; ?>">
                             <div class="stat-icon">
                                 <i class="bi bi-cash-stack"></i>
                             </div>
