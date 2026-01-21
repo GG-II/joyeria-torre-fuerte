@@ -1,21 +1,29 @@
 <?php
 // ================================================
 // CONFIGURACIÓN DEL SISTEMA - JOYERÍA TORRE FUERTE
+// PLANTILLA DE EJEMPLO - NO CONTIENE DATOS REALES
 // ================================================
+// 
+// INSTRUCCIONES:
+// 1. Copia este archivo como "config.php"
+// 2. Ajusta los valores según tu entorno
+// 3. NUNCA subas config.php a Git (está en .gitignore)
+//
 
 // ================================================
 // ENTORNO
 // ================================================
+// Valores: 'development' o 'production'
 define('ENVIRONMENT', 'development');
 
 // ================================================
 // BASE DE DATOS
 // ================================================
 define('DB_HOST', 'localhost');
-define('DB_PORT', '3307');  // Puerto personalizado
+define('DB_PORT', '3307');  // Ajustar según tu configuración
 define('DB_NAME', 'joyeria_torre_fuerte');
 define('DB_USER', 'root');
-define('DB_PASS', '');  // XAMPP por defecto sin password
+define('DB_PASS', '');  // Cambiar en producción
 
 // ================================================
 // RUTAS
@@ -54,7 +62,7 @@ if (ENVIRONMENT === 'development') {
 // ================================================
 // CONFIGURACIÓN DE SUBIDA DE ARCHIVOS
 // ================================================
-define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
+define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB en bytes
 define('ALLOWED_IMAGE_TYPES', ['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 define('UPLOAD_PATH', __DIR__ . '/uploads/');
 
@@ -69,5 +77,5 @@ define('ITEMS_PER_PAGE', 20);
 // SEGURIDAD
 // ================================================
 define('PASSWORD_MIN_LENGTH', 6);
-define('SESSION_TIMEOUT', 3600); // 1 hora
+define('SESSION_TIMEOUT', 3600); // 1 hora en segundos
 ?>
