@@ -1,0 +1,74 @@
+# ================================================
+# ARCHIVOS A IGNORAR EN GIT
+# Joyería Torre Fuerte - Sistema de Gestión
+# ================================================
+
+# ================================================
+# CONFIGURACIÓN (CON CONTRASEÑAS)
+# ================================================
+config.php              # ← IMPORTANTE: Nunca subir. Tiene contraseñas reales
+.env                    # Variables de entorno
+.env.local
+
+# ================================================
+# LOGS Y ERRORES
+# ================================================
+logs/
+logs/*
+*.log
+error_log
+php-errors.log
+
+# ================================================
+# UPLOADS Y ARCHIVOS TEMPORALES
+# ================================================
+uploads/
+uploads/*
+tmp/
+temp/
+cache/
+*.tmp
+
+# ================================================
+# DEPENDENCIAS (si usas Composer después)
+# ================================================
+vendor/
+composer.lock
+
+# ================================================
+# IDEs Y EDITORES
+# ================================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# ================================================
+# NODE (si usas npm/webpack después)
+# ================================================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ================================================
+# ARCHIVOS DEL SISTEMA
+# ================================================
+.env.example.backup
+*.bak
+*.swp
+*.swo
+
+# ================================================
+# BASE DE DATOS (Backups locales)
+# ================================================
+*.sql.backup
+database/backups/*.sql
+!database/schema.sql    # ← IMPORTANTE: schema.sql SÍ va a Git
+
+# ================================================
+# PHPSTORM/JETBRAINS
+# ================================================
+.phpstorm.meta.php
+_ide_helper.php
