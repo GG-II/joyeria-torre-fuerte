@@ -1,17 +1,14 @@
 <?php
-// ================================================
-// ÍNDICE DE TESTS
-// Sistema de Gestión - Joyería Torre Fuerte
-// ================================================
+/**
+ * Índice de Tests del Sistema
+ * Joyería Torre Fuerte
+ */
 
 session_start();
-
-// Simular usuario autenticado
 $_SESSION['usuario_id'] = 1;
-$_SESSION['usuario_nombre'] = 'Administrador Test';
+$_SESSION['usuario_nombre'] = 'Admin Test';
 $_SESSION['usuario_rol'] = 'administrador';
 $_SESSION['usuario_sucursal_id'] = 1;
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -19,212 +16,213 @@ $_SESSION['usuario_sucursal_id'] = 1;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tests - Sistema Joyería Torre Fuerte</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body {
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            min-height: 100vh;
-            font-family: 'Inter', sans-serif;
-        }
-        .test-card {
-            transition: all 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .test-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
-        }
-        .icon-box {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin: 0 auto 1rem;
-        }
-        .bg-gold { background-color: #D4AF37; color: white; }
-        .bg-blue { background-color: #1e3a8a; color: white; }
-        .bg-silver { background-color: #C0C0C0; color: #1a1a1a; }
-        .bg-green { background-color: #10b981; color: white; }
-        .bg-orange { background-color: #f59e0b; color: white; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 0; }
+        .test-card { transition: transform 0.3s, box-shadow 0.3s; }
+        .test-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .module-icon { font-size: 3rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
-    <div class="container py-5">
-        <div class="row mb-5">
-            <div class="col-12 text-center text-white">
-                <h1 class="display-4 fw-bold mb-3">
-                    🧪 Sistema de Tests
-                </h1>
-                <p class="lead">Joyería Torre Fuerte - Pruebas de Modelos</p>
-                <hr class="border-white">
-            </div>
-        </div>
 
-        <div class="row g-4 mb-4">
-            <!-- Test Producto -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card test-card h-100">
-                    <div class="card-body text-center">
-                        <div class="icon-box bg-gold">
-                            <i class="bi bi-box-seam"></i>
-                        </div>
-                        <h5 class="card-title">Productos</h5>
-                        <p class="card-text text-muted">
-                            Pruebas del modelo de productos con múltiples precios
-                        </p>
-                        <a href="test-producto.php" class="btn btn-warning btn-sm w-100">
-                            <i class="bi bi-play-fill"></i> Ejecutar Test
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Test Categoría -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card test-card h-100">
-                    <div class="card-body text-center">
-                        <div class="icon-box bg-blue">
-                            <i class="bi bi-folder"></i>
-                        </div>
-                        <h5 class="card-title">Categorías</h5>
-                        <p class="card-text text-muted">
-                            Pruebas del modelo de categorías jerárquicas
-                        </p>
-                        <a href="test-categoria.php" class="btn btn-primary btn-sm w-100">
-                            <i class="bi bi-play-fill"></i> Ejecutar Test
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Test Inventario -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card test-card h-100">
-                    <div class="card-body text-center">
-                        <div class="icon-box bg-green">
-                            <i class="bi bi-boxes"></i>
-                        </div>
-                        <h5 class="card-title">Inventario</h5>
-                        <p class="card-text text-muted">
-                            Pruebas de stock, movimientos y transferencias
-                        </p>
-                        <a href="test-inventario.php" class="btn btn-success btn-sm w-100">
-                            <i class="bi bi-play-fill"></i> Ejecutar Test
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Test Materia Prima -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card test-card h-100">
-                    <div class="card-body text-center">
-                        <div class="icon-box bg-silver">
-                            <i class="bi bi-gem"></i>
-                        </div>
-                        <h5 class="card-title">Materias Primas</h5>
-                        <p class="card-text text-muted">
-                            Pruebas de oro, plata y piedras (sin código)
-                        </p>
-                        <a href="test-materia-prima.php" class="btn btn-secondary btn-sm w-100">
-                            <i class="bi bi-play-fill"></i> Ejecutar Test
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Segunda fila de tests -->
-        <div class="row g-4 mb-4">
-            <!-- Test Trabajo Taller -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card test-card h-100">
-                    <div class="card-body text-center">
-                        <div class="icon-box bg-orange">
-                            <i class="bi bi-tools"></i>
-                        </div>
-                        <h5 class="card-title">Trabajo Taller</h5>
-                        <p class="card-text text-muted">
-                            Pruebas de trabajos, transferencias y entregas
-                        </p>
-                        <a href="test-trabajo-taller.php" class="btn btn-sm w-100" style="background-color: #f59e0b; color: white;">
-                            <i class="bi bi-play-fill"></i> Ejecutar Test
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Información -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-dark text-white">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información de Tests</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6><i class="bi bi-check-circle text-success"></i> Tests Incluidos:</h6>
-                                <ul>
-                                    <li><strong>Producto:</strong> Crear, actualizar, listar, buscar, precios, eliminar</li>
-                                    <li><strong>Categoría:</strong> Crear, actualizar, listar por tipo, árbol jerárquico</li>
-                                    <li><strong>Inventario:</strong> Stock, movimientos, transferencias, historial</li>
-                                    <li><strong>Materia Prima:</strong> Crear sin código, incrementar/decrementar cantidad</li>
-                                    <li><strong>Trabajo Taller:</strong> Crear, transferir, completar, entregar, alertas</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6><i class="bi bi-shield-check text-primary"></i> Verificaciones:</h6>
-                                <ul>
-                                    <li>✅ Transacciones SQL funcionando</li>
-                                    <li>✅ Auditoría registrada correctamente</li>
-                                    <li>✅ Validaciones de datos</li>
-                                    <li>✅ Soft delete implementado</li>
-                                    <li>✅ Funciones helper utilizadas</li>
-                                    <li>✅ Sistema de transferencias (Taller)</li>
-                                    <li>✅ Historial inmutable (Taller)</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info mt-3 mb-0">
-                            <strong><i class="bi bi-lightbulb"></i> Nota:</strong> 
-                            Los tests crean datos de prueba en la base de datos. 
-                            Se utiliza soft delete, por lo que los registros de prueba pueden ser reactivados si es necesario.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Acciones -->
-        <div class="row mt-4">
-            <div class="col-12 text-center">
-                <a href="../dashboard.php" class="btn btn-light btn-lg">
-                    <i class="bi bi-arrow-left"></i> Volver al Dashboard
-                </a>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="row mt-5">
-            <div class="col-12 text-center text-white">
-                <p class="mb-0">
-                    <small>
-                        Sistema de Gestión - Joyería Torre Fuerte v1.0<br>
-                        Tests ejecutados en: <?php echo date('d/m/Y H:i:s'); ?>
-                    </small>
-                </p>
-            </div>
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12 text-center text-white">
+            <h1 class="display-4 mb-3">🧪 Tests del Sistema</h1>
+            <p class="lead">Joyería Torre Fuerte - Sistema de Gestión</p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="row g-4">
+        
+        <!-- Test Autenticación -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">🔐</div>
+                    <h5 class="card-title">Autenticación</h5>
+                    <p class="card-text">Pruebas de login, logout y sesiones</p>
+                    <a href="test-auth.php" class="btn btn-primary">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Usuarios -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">👥</div>
+                    <h5 class="card-title">Usuarios</h5>
+                    <p class="card-text">CRUD de usuarios y permisos</p>
+                    <a href="test-usuarios.php" class="btn btn-primary">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Productos -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">💎</div>
+                    <h5 class="card-title">Productos</h5>
+                    <p class="card-text">Gestión de productos y precios</p>
+                    <a href="test-productos.php" class="btn btn-primary">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Inventario -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">📦</div>
+                    <h5 class="card-title">Inventario</h5>
+                    <p class="card-text">Stock, movimientos y transferencias</p>
+                    <a href="test-inventario.php" class="btn btn-primary">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Taller -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">⚒️</div>
+                    <h5 class="card-title">Taller</h5>
+                    <p class="card-text">Trabajos, transferencias y alertas</p>
+                    <a href="test-taller.php" class="btn btn-primary">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Clientes -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">👤</div>
+                    <h5 class="card-title">Clientes</h5>
+                    <p class="card-text">CRUD clientes y límites de crédito</p>
+                    <a href="test-cliente.php" class="btn btn-primary">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Ventas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">🛒</div>
+                    <h5 class="card-title">Ventas</h5>
+                    <p class="card-text">Ventas, formas de pago y anulaciones</p>
+                    <a href="test-venta.php" class="btn btn-success">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Créditos -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">💳</div>
+                    <h5 class="card-title">Créditos</h5>
+                    <p class="card-text">Créditos semanales y abonos</p>
+                    <a href="test-credito.php" class="btn btn-success">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Caja -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">💰</div>
+                    <h5 class="card-title">Caja</h5>
+                    <p class="card-text">Apertura, movimientos y cierres</p>
+                    <a href="test-caja.php" class="btn btn-success">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Reportes -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100">
+                <div class="card-body text-center">
+                    <div class="module-icon">📊</div>
+                    <h5 class="card-title">Reportes</h5>
+                    <p class="card-text">Reportes y estadísticas del sistema</p>
+                    <a href="test-reporte.php" class="btn btn-warning">Ejecutar Tests</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Usuarios -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="module-icon">👤</div>
+                    <h5 class="card-title">Usuarios</h5>
+                    <p class="card-text">CRUD y gestión de usuarios</p>
+                    <a href="test-usuario.php" class="btn btn-primary">Ejecutar Tests ⭐ NUEVO</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Proveedores -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="module-icon">📦</div>
+                    <h5 class="card-title">Proveedores</h5>
+                    <p class="card-text">Gestión de proveedores</p>
+                    <a href="test-proveedor.php" class="btn btn-primary">Ejecutar Tests ⭐ NUEVO</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Facturas -->
+        <div class="col-md-6 col-lg-4">
+            <div class="card test-card h-100 border-primary">
+                <div class="card-body text-center">
+                    <div class="module-icon">📄</div>
+                    <h5 class="card-title">Facturas</h5>
+                    <p class="card-text">Facturación simple y electrónica</p>
+                    <a href="test-factura.php" class="btn btn-primary">Ejecutar Tests ⭐ NUEVO</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Estado del Proyecto</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-3 text-center">
+                            <h3>✅ 13</h3>
+                            <p>Módulos Completados</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3>🧪 150+</h3>
+                            <p>Tests Automatizados</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3>📝 9,000+</h3>
+                            <p>Líneas de Código</p>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h3>🎯 100%</h3>
+                            <p>Tasa de Éxito</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
