@@ -50,6 +50,7 @@ $_SESSION['usuario_sucursal_id'] = 1;
         .bg-blue { background-color: #1e3a8a; color: white; }
         .bg-silver { background-color: #C0C0C0; color: #1a1a1a; }
         .bg-green { background-color: #10b981; color: white; }
+        .bg-orange { background-color: #f59e0b; color: white; }
     </style>
 </head>
 <body>
@@ -138,6 +139,27 @@ $_SESSION['usuario_sucursal_id'] = 1;
             </div>
         </div>
 
+        <!-- Segunda fila de tests -->
+        <div class="row g-4 mb-4">
+            <!-- Test Trabajo Taller -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card test-card h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-box bg-orange">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                        <h5 class="card-title">Trabajo Taller</h5>
+                        <p class="card-text text-muted">
+                            Pruebas de trabajos, transferencias y entregas
+                        </p>
+                        <a href="test-trabajo-taller.php" class="btn btn-sm w-100" style="background-color: #f59e0b; color: white;">
+                            <i class="bi bi-play-fill"></i> Ejecutar Test
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Información -->
         <div class="row">
             <div class="col-12">
@@ -154,6 +176,7 @@ $_SESSION['usuario_sucursal_id'] = 1;
                                     <li><strong>Categoría:</strong> Crear, actualizar, listar por tipo, árbol jerárquico</li>
                                     <li><strong>Inventario:</strong> Stock, movimientos, transferencias, historial</li>
                                     <li><strong>Materia Prima:</strong> Crear sin código, incrementar/decrementar cantidad</li>
+                                    <li><strong>Trabajo Taller:</strong> Crear, transferir, completar, entregar, alertas</li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
@@ -164,6 +187,8 @@ $_SESSION['usuario_sucursal_id'] = 1;
                                     <li>✅ Validaciones de datos</li>
                                     <li>✅ Soft delete implementado</li>
                                     <li>✅ Funciones helper utilizadas</li>
+                                    <li>✅ Sistema de transferencias (Taller)</li>
+                                    <li>✅ Historial inmutable (Taller)</li>
                                 </ul>
                             </div>
                         </div>
