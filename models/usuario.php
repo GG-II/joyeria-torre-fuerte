@@ -36,13 +36,13 @@ class Usuario {
             }
             
             // Hash de la contraseña
-            $password_hash = crear_hash_password($datos['password']);
+            $password_hash = hash_password($datos['password']);
             
             // Insertar usuario
             $sql = "INSERT INTO usuarios (
                         nombre, email, password, rol, 
-                        sucursal_id, telefono, activo
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        sucursal_id, activo
+                    ) VALUES (?, ?, ?, ?, ?, ?)";
             
             $resultado = db_execute($sql, [
                 $datos['nombre'],
@@ -50,12 +50,11 @@ class Usuario {
                 $password_hash,
                 $datos['rol'],
                 $datos['sucursal_id'] ?? null,
-                $datos['telefono'] ?? null,
                 $datos['activo'] ?? 1
             ]);
             
             if ($resultado) {
-                $usuario_id = db_ultimo_id();
+                $usuario_id = $resultado; // db_execute devuelve el ID en INSERT
                 
                 // Registrar en auditoría
                 registrar_auditoria(
@@ -110,7 +109,6 @@ class Usuario {
                         email = ?,
                         rol = ?,
                         sucursal_id = ?,
-                        telefono = ?,
                         activo = ?
                     WHERE id = ?";
             
@@ -119,7 +117,6 @@ class Usuario {
                 $datos['email'],
                 $datos['rol'],
                 $datos['sucursal_id'] ?? null,
-                $datos['telefono'] ?? null,
                 $datos['activo'] ?? 1,
                 $id
             ]);
@@ -169,7 +166,7 @@ class Usuario {
             }
             
             // Hash de nueva contraseña
-            $password_hash = crear_hash_password($password_nueva);
+            $password_hash = hash_password($password_nueva);
             
             // Actualizar contraseña
             $sql = "UPDATE usuarios SET password = ? WHERE id = ?";
@@ -207,7 +204,7 @@ class Usuario {
             }
             
             // Hash de nueva contraseña
-            $password_hash = crear_hash_password($password_nueva);
+            $password_hash = hash_password($password_nueva);
             
             // Actualizar contraseña
             $sql = "UPDATE usuarios SET password = ? WHERE id = ?";
@@ -371,7 +368,6 @@ class Usuario {
                         u.nombre,
                         u.email,
                         u.rol,
-                        u.telefono,
                         u.activo,
                         u.ultimo_acceso,
                         u.fecha_creacion,

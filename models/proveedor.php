@@ -47,7 +47,7 @@ class Proveedor {
             ]);
             
             if ($resultado) {
-                $proveedor_id = db_ultimo_id();
+                $proveedor_id = $resultado; // db_execute devuelve el ID en INSERT
                 
                 // Registrar en auditoría
                 registrar_auditoria(

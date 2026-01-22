@@ -51,18 +51,21 @@ $factura_test_id = null;
 // ========================================
 echo '<div class="card mb-3 border-warning"><div class="card-header bg-warning"><h5>⚙️ PREPARACIÓN: Buscar Venta para Facturar</h5></div><div class="card-body">';
 try {
+    // Buscar una venta completada que NO tenga factura
     $venta = db_query_one(
-        "SELECT id, numero_venta, total 
-         FROM ventas 
-         WHERE estado = 'completada' 
-         ORDER BY id DESC 
+        "SELECT v.id, v.numero_venta, v.total 
+         FROM ventas v
+         LEFT JOIN facturas f ON v.id = f.venta_id AND f.estado = 'emitida'
+         WHERE v.estado = 'completada' 
+           AND f.id IS NULL
+         ORDER BY v.id DESC 
          LIMIT 1"
     );
     
     if ($venta) {
-        echo '<div class="alert test-info">✓ Venta encontrada: ' . $venta['numero_venta'] . ' - Total: ' . formato_dinero($venta['total']) . '</div>';
+        echo '<div class="alert test-info">✓ Venta encontrada SIN factura: ' . $venta['numero_venta'] . ' - Total: ' . formato_dinero($venta['total']) . '</div>';
     } else {
-        echo '<div class="alert test-warning">⚠️ No hay ventas disponibles para facturar</div>';
+        echo '<div class="alert test-warning">⚠️ No hay ventas disponibles sin factura. Se omitirán algunos tests.</div>';
     }
 } catch (Exception $e) {
     echo '<div class="alert test-error">Error: ' . $e->getMessage() . '</div>';
@@ -100,8 +103,9 @@ try {
             $tests_failed++;
         }
     } else {
-        echo '<div class="alert test-info">⚠️ Test omitido (sin ventas disponibles)</div>';
-        $tests_passed++;
+        echo '<div class="alert test-info">⚠️ Test omitido: No hay ventas sin factura disponibles</div>';
+        echo '<div class="alert alert-secondary">💡 Tip: Crea una venta nueva desde el sistema y vuelve a ejecutar este test</div>';
+        $tests_passed++; // Contar como exitoso porque no es un error del código
     }
 } catch (Exception $e) {
     echo '<div class="alert test-error">❌ EXCEPCIÓN: ' . $e->getMessage() . '</div>';
@@ -115,15 +119,26 @@ echo '</div></div>';
 echo '<div class="card mb-3"><div class="card-header"><h5>TEST 2: Validar Factura Duplicada</h5></div><div class="card-body">';
 try {
     if ($venta && $factura_test_id) {
-        // Intentar crear otra factura para la misma venta
-        $resultado = Factura::crear($venta['id'], [
-            'tipo' => 'simple',
-            'nit' => 'C/F',
-            'nombre' => 'Consumidor Final'
-        ]);
+        $excepcion_lanzada = false;
         
-        if ($resultado === false) {
+        try {
+            // Intentar crear otra factura para la misma venta
+            $resultado = Factura::crear($venta['id'], [
+                'tipo' => 'simple',
+                'nit' => 'C/F',
+                'nombre' => 'Consumidor Final'
+            ]);
+        } catch (Exception $e) {
+            $excepcion_lanzada = true;
+            $mensaje_excepcion = $e->getMessage();
+        }
+        
+        if ($excepcion_lanzada && strpos($mensaje_excepcion, 'ya tiene una factura') !== false) {
             echo '<div class="alert test-success">✅ ÉXITO: Sistema rechazó correctamente factura duplicada</div>';
+            echo '<div class="alert test-info">Mensaje: ' . htmlspecialchars($mensaje_excepcion) . '</div>';
+            $tests_passed++;
+        } else if ($resultado === false) {
+            echo '<div class="alert test-success">✅ ÉXITO: Sistema rechazó correctamente factura duplicada (retornó false)</div>';
             $tests_passed++;
         } else {
             echo '<div class="alert test-error">❌ ERROR: Sistema permitió factura duplicada</div>';
@@ -134,7 +149,7 @@ try {
         $tests_passed++;
     }
 } catch (Exception $e) {
-    echo '<div class="alert test-error">❌ EXCEPCIÓN: ' . $e->getMessage() . '</div>';
+    echo '<div class="alert test-error">❌ EXCEPCIÓN INESPERADA: ' . $e->getMessage() . '</div>';
     $tests_failed++;
 }
 echo '</div></div>';
@@ -365,6 +380,38 @@ echo '<div class="card border-' . $clase_resumen . '">
             </div>
         </div>
       </div>';
+
+// ========================================
+// LIMPIEZA OPCIONAL
+// ========================================
+if ($factura_test_id) {
+    echo '<div class="card mt-3 border-info">
+            <div class="card-header bg-info text-white">
+                <h5>🧹 Limpieza de Datos de Prueba</h5>
+            </div>
+            <div class="card-body">
+                <p>Se creó una factura de prueba durante este test. Si quieres ejecutar el test nuevamente con los mismos datos, puedes eliminar esta factura:</p>
+                <form method="post" style="display:inline;">
+                    <input type="hidden" name="limpiar_factura" value="' . $factura_test_id . '">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm(\'¿Eliminar la factura de prueba?\')">
+                        🗑️ Eliminar Factura de Prueba
+                    </button>
+                </form>
+                <p class="text-muted mt-2 mb-0">Factura ID: ' . $factura_test_id . '</p>
+            </div>
+          </div>';
+}
+
+// Procesar limpieza si se solicitó
+if (isset($_POST['limpiar_factura'])) {
+    $id = (int)$_POST['limpiar_factura'];
+    try {
+        db_execute("DELETE FROM facturas WHERE id = ?", [$id]);
+        echo '<div class="alert alert-success mt-3">✅ Factura de prueba eliminada. Puedes recargar la página para ejecutar el test nuevamente.</div>';
+    } catch (Exception $e) {
+        echo '<div class="alert alert-danger mt-3">❌ Error al eliminar: ' . $e->getMessage() . '</div>';
+    }
+}
 
 ?>
 

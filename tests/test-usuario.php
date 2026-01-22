@@ -64,7 +64,6 @@ try {
         'password' => 'password123',
         'rol' => 'vendedor',
         'sucursal_id' => 1,
-        'telefono' => '5555-5555',
         'activo' => 1
     ];
     
@@ -160,7 +159,6 @@ try {
             'email' => 'test_editado_' . time() . '@joyeria.com',
             'rol' => 'cajero',
             'sucursal_id' => 1,
-            'telefono' => '6666-6666',
             'activo' => 1
         ]);
         

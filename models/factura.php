@@ -65,7 +65,7 @@ class Factura {
             ]);
             
             if ($resultado) {
-                $factura_id = db_ultimo_id();
+                $factura_id = $resultado; // db_execute devuelve el ID en INSERT
                 
                 // Registrar en auditoría
                 registrar_auditoria(
@@ -82,6 +82,10 @@ class Factura {
             
         } catch (Exception $e) {
             registrar_error("Error al crear factura: " . $e->getMessage());
+            // Re-lanzar excepción en desarrollo para debugging
+            if (ENVIRONMENT === 'development') {
+                throw $e;
+            }
             return false;
         }
     }
