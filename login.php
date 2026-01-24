@@ -34,40 +34,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Título de página
+$titulo_pagina = 'Iniciar Sesión';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - <?php echo SISTEMA_NOMBRE; ?></title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title><?php echo $titulo_pagina; ?> - <?php echo SISTEMA_NOMBRE; ?></title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Google Fonts - Sans-Serif moderna y legible -->
+    <!-- Bootstrap CSS Local -->
+    <link href="<?php echo BASE_URL; ?>assets/css/bootstrap/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons Local -->
+    <link href="<?php echo BASE_URL; ?>assets/css/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
     
+    <!-- CSS Personalizado -->
+    <link href="<?php echo BASE_URL; ?>assets/css/custom.css" rel="stylesheet">
+    
+    <!-- Estilos específicos del login -->
     <style>
-        :root {
-            --color-dorado: #D4AF37;
-            --color-azul: #1e3a8a;
-            --color-azul-claro: #3b82f6;
-            --color-negro: #1a1a1a;
-            --color-gris: #4b5563;
-            --color-plateado: #C0C0C0;
-            --color-blanco: #FFFFFF;
-            --color-rojo: #dc2626;
-        }
-        
         body {
             background: linear-gradient(135deg, var(--color-azul) 0%, #0f172a 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Inter', sans-serif;
             position: relative;
             overflow: hidden;
         }
@@ -161,48 +159,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: var(--color-blanco);
         }
         
-        .form-label {
-            font-weight: 600;
-            color: var(--color-negro);
-            margin-bottom: 8px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .form-control {
-            border-radius: 6px;
-            border: 2px solid #d1d5db;
-            padding: 12px 15px;
-            font-size: 15px;
-            transition: all 0.3s;
-            font-family: 'Lora', serif;
-        }
-        
-        .form-control:focus {
-            border-color: var(--color-dorado);
-            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-            outline: none;
-        }
-        
-        .input-group-text {
-            border-radius: 6px 0 0 6px;
-            border: 2px solid #d1d5db;
-            border-right: none;
-            background: #f9fafb;
-            color: var(--color-azul);
-        }
-        
-        .input-group .form-control {
-            border-left: none;
-            border-radius: 0 6px 6px 0;
-        }
-        
-        .input-group:focus-within .input-group-text {
-            border-color: var(--color-dorado);
-            background: #fffbeb;
-        }
-        
         .btn-login {
             background: var(--color-dorado);
             border: 2px solid var(--color-dorado);
@@ -215,7 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: all 0.3s;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-family: 'Playfair Display', serif;
         }
         
         .btn-login:hover {
@@ -224,33 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
             color: var(--color-blanco);
-        }
-        
-        .alert {
-            border-radius: 6px;
-            border: 2px solid;
-            font-size: 14px;
-        }
-        
-        .alert-danger {
-            background: #fee;
-            border-color: var(--color-rojo);
-            color: #991b1b;
-        }
-        
-        .alert-warning {
-            background: #fffbeb;
-            border-color: #f59e0b;
-            color: #92400e;
-        }
-        
-        .login-footer {
-            padding: 20px 30px;
-            background: #f9fafb;
-            text-align: center;
-            font-size: 13px;
-            color: var(--color-gris);
-            border-top: 1px solid #e5e7eb;
         }
         
         .demo-credentials {
@@ -266,7 +194,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--color-azul);
             display: block;
             margin-bottom: 10px;
-            font-family: 'Playfair Display', serif;
         }
         
         .demo-credentials .credential-item {
@@ -284,6 +211,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 3px;
             font-family: monospace;
             font-size: 12px;
+        }
+        
+        .login-footer {
+            padding: 20px 30px;
+            background: #f9fafb;
+            text-align: center;
+            font-size: 13px;
+            color: var(--color-gris);
+            border-top: 1px solid #e5e7eb;
         }
         
         .security-badge {
@@ -400,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS Local -->
+    <script src="<?php echo BASE_URL; ?>assets/js/bootstrap/bootstrap.bundle.min.js"></script>
 </body>
 </html>
