@@ -1,51 +1,51 @@
-<?php
-// ================================================
-// NAVBAR - NAVEGACIÓN PRINCIPAL
-// ================================================
-
-// Obtener la ruta actual para marcar el menú activo
-$current_page = basename($_SERVER['PHP_SELF']);
-$current_dir = basename(dirname($_SERVER['PHP_SELF']));
-
-// Función para determinar si un menú está activo
-function is_active($module) {
-    global $current_dir;
-    return $current_dir === $module ? 'active' : '';
-}
-?>
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<!-- Navbar Principal -->
+<nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
         <!-- Logo y Nombre -->
-        <a class="navbar-brand d-flex align-items-center" href="<?php echo BASE_URL; ?>dashboard.php">
-            <i class="bi bi-gem me-2" style="font-size: 1.5rem; color: var(--color-dorado);"></i>
-            <span class="fw-bold">Joyería Torre Fuerte</span>
+        <a class="navbar-brand" href="<?php echo BASE_URL; ?>dashboard.php">
+            <?php if (file_exists(__DIR__ . '/../assets/img/logo-torre-fuerte.png')): ?>
+                <img src="<?php echo BASE_URL; ?>assets/img/logo-torre-fuerte.png" alt="Logo Torre Fuerte">
+            <?php else: ?>
+                <i class="bi bi-gem"></i>
+            <?php endif; ?>
+            <span><?php echo SISTEMA_NOMBRE; ?></span>
         </a>
-
-        <!-- Botón toggle para móvil -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        
+        <!-- Botón Hamburguesa (Móvil) -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-
+        
         <!-- Menú de Navegación -->
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
+                <?php
+                // Página actual para marcar activo
+                $pagina_actual = basename($_SERVER['PHP_SELF']);
+                $directorio_actual = basename(dirname($_SERVER['PHP_SELF']));
+                
+                // Función helper para determinar si un menú está activo
+                function menu_activo($modulo) {
+                    global $directorio_actual;
+                    return $directorio_actual === $modulo ? 'active' : '';
+                }
+                ?>
+                
                 <!-- Dashboard -->
                 <li class="nav-item">
-                    <a class="nav-link <?php echo ($current_page === 'dashboard.php') ? 'active' : ''; ?>" 
+                    <a class="nav-link <?php echo ($pagina_actual === 'dashboard.php') ? 'active' : ''; ?>" 
                        href="<?php echo BASE_URL; ?>dashboard.php">
                         <i class="bi bi-speedometer2"></i>
                         Dashboard
                     </a>
                 </li>
-
+                
                 <!-- Ventas -->
                 <?php if (tiene_permiso('ventas', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('ventas'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('ventas'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-cart-check"></i>
                         Ventas
                     </a>
@@ -67,14 +67,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Clientes -->
                 <?php if (tiene_permiso('clientes', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('clientes'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('clientes'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-people"></i>
                         Clientes
                     </a>
@@ -96,14 +94,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Inventario -->
                 <?php if (tiene_permiso('inventario', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('inventario'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('inventario'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-box-seam"></i>
                         Inventario
                     </a>
@@ -132,14 +128,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Taller -->
                 <?php if (tiene_permiso('taller', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('taller'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('taller'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-tools"></i>
                         Taller
                     </a>
@@ -168,14 +162,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Caja -->
                 <?php if (tiene_permiso('caja', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('caja'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('caja'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-cash-stack"></i>
                         Caja
                     </a>
@@ -198,14 +190,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Proveedores -->
                 <?php if (tiene_permiso('proveedores', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('proveedores'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('proveedores'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-truck"></i>
                         Proveedores
                     </a>
@@ -227,14 +217,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Reportes -->
                 <?php if (tiene_permiso('reportes', 'ver')): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('reportes'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('reportes'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-graph-up"></i>
                         Reportes
                     </a>
@@ -264,7 +252,7 @@ function is_active($module) {
                                 Reporte de Taller
                             </a>
                         </li>
-                        <?php if (tiene_permiso('reportes', 'ver') && in_array($_SESSION['usuario_rol'] ?? '', ['administrador', 'dueño'])): ?>
+                        <?php if (in_array($_SESSION['usuario_rol'] ?? '', ['administrador', 'dueño'])): ?>
                         <li>
                             <a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/reportes/financiero.php">
                                 <i class="bi bi-cash-stack"></i>
@@ -275,14 +263,12 @@ function is_active($module) {
                     </ul>
                 </li>
                 <?php endif; ?>
-
+                
                 <!-- Configuración (solo admin/dueño) -->
                 <?php if (in_array($_SESSION['usuario_rol'] ?? '', ['administrador', 'dueño'])): ?>
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?php echo is_active('configuracion'); ?>" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle <?php echo menu_activo('configuracion'); ?>" 
+                       href="#" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-gear"></i>
                         Configuración
                     </a>
@@ -316,93 +302,37 @@ function is_active($module) {
                 </li>
                 <?php endif; ?>
             </ul>
-
-            <!-- Menú de Usuario (derecha) -->
-            <ul class="navbar-nav ms-auto">
-                <!-- Notificaciones -->
+            
+            <!-- Usuario y Dropdown -->
+            <ul class="navbar-nav">
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
-                        <i class="bi bi-bell"></i>
-                        <span class="badge bg-danger rounded-pill">3</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
-                        <li class="dropdown-header">Notificaciones</li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <small class="text-danger">
-                                    <i class="bi bi-exclamation-triangle"></i>
-                                    12 productos bajo stock
-                                </small>
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <small class="text-warning">
-                                    <i class="bi bi-clock"></i>
-                                    3 trabajos con entrega próxima
-                                </small>
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <small class="text-info">
-                                    <i class="bi bi-cash"></i>
-                                    Recordatorio: Cerrar caja
-                                </small>
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item text-center" href="#">
-                                <small>Ver todas las notificaciones</small>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-
-                <!-- Usuario -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" 
-                       href="#" 
-                       role="button" 
-                       data-bs-toggle="dropdown">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
-                             style="width: 32px; height: 32px;">
-                            <i class="bi bi-person"></i>
-                        </div>
-                        <span><?php echo $_SESSION['usuario_nombre'] ?? 'Usuario'; ?></span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li class="dropdown-header">
-                            <div class="text-center">
-                                <strong><?php echo $_SESSION['usuario_nombre'] ?? 'Usuario'; ?></strong>
-                                <br>
-                                <small class="text-muted">
-                                    <?php echo ucfirst($_SESSION['usuario_rol'] ?? 'usuario'); ?>
-                                </small>
-                                <br>
-                                <small class="text-muted">
-                                    <?php echo $_SESSION['usuario_sucursal_nombre'] ?? 'Todas las sucursales'; ?>
-                                </small>
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="user-info d-inline-flex align-items-center">
+                            <div class="user-avatar">
+                                <?php echo strtoupper(substr(usuario_actual_nombre(), 0, 1)); ?>
                             </div>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
+                            <div class="d-none d-lg-block ms-2">
+                                <div class="user-name"><?php echo explode(' ', usuario_actual_nombre())[0]; ?></div>
+                                <div class="user-role"><?php echo ucfirst(usuario_actual_rol()); ?></div>
+                            </div>
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                         <li>
-                            <a class="dropdown-item" href="<?php echo BASE_URL; ?>perfil.php">
+                            <a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/perfil/perfil.php">
                                 <i class="bi bi-person-circle"></i>
                                 Mi Perfil
                             </a>
                         </li>
+                        <?php if (tiene_permiso('configuracion', 'ver')): ?>
                         <li>
-                            <a class="dropdown-item" href="<?php echo BASE_URL; ?>configuracion/sistema.php">
+                            <a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/configuracion/sistema.php">
                                 <i class="bi bi-gear"></i>
                                 Configuración
                             </a>
                         </li>
+                        <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item text-danger" href="<?php echo BASE_URL; ?>logout.php">
@@ -416,48 +346,3 @@ function is_active($module) {
         </div>
     </div>
 </nav>
-
-<style>
-/* Estilos adicionales para la navbar */
-.navbar-dark .nav-link {
-    color: rgba(255, 255, 255, 0.8);
-    transition: all 0.3s ease;
-}
-
-.navbar-dark .nav-link:hover,
-.navbar-dark .nav-link.active {
-    color: var(--color-dorado);
-}
-
-.navbar-dark .dropdown-menu {
-    background-color: #2d3748;
-    border: none;
-}
-
-.navbar-dark .dropdown-item {
-    color: rgba(255, 255, 255, 0.8);
-    transition: all 0.3s ease;
-}
-
-.navbar-dark .dropdown-item:hover {
-    background-color: rgba(212, 175, 55, 0.1);
-    color: var(--color-dorado);
-}
-
-.dropdown-divider {
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.dropdown-header {
-    color: var(--color-dorado);
-    font-weight: bold;
-}
-
-/* Badge de notificaciones */
-.badge.rounded-pill {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    font-size: 0.65rem;
-}
-</style>

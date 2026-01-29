@@ -1,190 +1,110 @@
 <?php
-// ================================================
-// MÓDULO PROVEEDORES - AGREGAR
-// ================================================
+/**
+ * ================================================
+ * MÓDULO PROVEEDORES - AGREGAR
+ * ================================================
+ * 
+ * TODO FASE 5: Conectar con API
+ * POST /api/proveedores/crear.php
+ * 
+ * Inserta en tabla: proveedores
+ * Campos: nombre, empresa, contacto, telefono, email, direccion, productos_suministra, activo
+ */
 
 require_once '../../config.php';
 require_once '../../includes/db.php';
 require_once '../../includes/funciones.php';
 require_once '../../includes/auth.php';
 
-// Verificar autenticación y permisos
 requiere_autenticacion();
 requiere_rol(['administrador', 'dueño']);
 
-// Título de página
 $titulo_pagina = 'Nuevo Proveedor';
-
-// Incluir header
 include '../../includes/header.php';
-
-// Incluir navbar
 include '../../includes/navbar.php';
 ?>
 
-<!-- Contenido Principal -->
 <div class="container-fluid main-content">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
+    <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="<?php echo BASE_URL; ?>dashboard.php">
-                    <i class="bi bi-house"></i> Dashboard
-                </a>
-            </li>
-            <li class="breadcrumb-item">
-                <a href="lista.php">
-                    <i class="bi bi-truck"></i> Proveedores
-                </a>
-            </li>
+            <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>dashboard.php"><i class="bi bi-house"></i> Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="lista.php"><i class="bi bi-truck"></i> Proveedores</a></li>
             <li class="breadcrumb-item active">Nuevo Proveedor</li>
         </ol>
     </nav>
 
-    <!-- Encabezado -->
-    <div class="page-header">
-        <h1>
-            <i class="bi bi-plus-circle"></i>
-            Nuevo Proveedor
-        </h1>
-        <p class="text-muted">Registre un nuevo proveedor en el sistema</p>
+    <div class="page-header mb-4">
+        <h1 class="mb-2"><i class="bi bi-plus-circle"></i> Nuevo Proveedor</h1>
+        <p class="text-muted mb-0">Registre un nuevo proveedor en el sistema</p>
     </div>
 
-    <div class="row">
+    <div class="row g-3">
         <div class="col-lg-8">
-            <!-- Formulario -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="bi bi-pencil-square"></i>
-                    Información del Proveedor
+            <div class="card shadow-sm">
+                <div class="card-header" style="background-color: #1e3a8a; color: white;">
+                    <i class="bi bi-pencil-square"></i> Información del Proveedor
                 </div>
                 <div class="card-body">
-                    <form id="formProveedor" method="POST" action="">
-                        <!-- Información Básica -->
-                        <h5 class="mb-3 text-primary">
-                            <i class="bi bi-person"></i>
-                            Información Básica
-                        </h5>
+                    <form id="formProveedor" method="POST">
+                        <h5 class="mb-3 text-primary"><i class="bi bi-person"></i> Información Básica</h5>
 
-                        <div class="row mb-3">
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
-                                <label for="nombre" class="form-label">
-                                    <i class="bi bi-person-badge"></i> Nombre del Proveedor *
-                                </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="nombre" 
-                                       name="nombre" 
-                                       placeholder="Nombre completo"
-                                       required>
+                                <label for="nombre" class="form-label"><i class="bi bi-person-badge"></i> Nombre del Proveedor *</label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Nombre completo" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="empresa" class="form-label">
-                                    <i class="bi bi-building"></i> Empresa (opcional)
-                                </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="empresa" 
-                                       name="empresa" 
-                                       placeholder="Nombre de la empresa">
+                                <label for="empresa" class="form-label"><i class="bi bi-building"></i> Empresa (opcional)</label>
+                                <input type="text" class="form-control" id="empresa" name="empresa" placeholder="Nombre de la empresa">
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="contacto" class="form-label">
-                                <i class="bi bi-person-lines-fill"></i> Persona de Contacto
-                            </label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="contacto" 
-                                   name="contacto" 
-                                   placeholder="Ej: Juan Pérez - Gerente de Ventas">
+                        <div class="mb-4">
+                            <label for="contacto" class="form-label"><i class="bi bi-person-lines-fill"></i> Persona de Contacto</label>
+                            <input type="text" class="form-control" id="contacto" name="contacto" placeholder="Ej: Juan Pérez - Gerente de Ventas">
                         </div>
 
                         <hr class="my-4">
 
-                        <!-- Datos de Contacto -->
-                        <h5 class="mb-3 text-primary">
-                            <i class="bi bi-telephone"></i>
-                            Datos de Contacto
-                        </h5>
+                        <h5 class="mb-3 text-primary"><i class="bi bi-telephone"></i> Datos de Contacto</h5>
 
-                        <div class="row mb-3">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label for="telefono" class="form-label">
-                                    <i class="bi bi-phone"></i> Teléfono
-                                </label>
-                                <input type="tel" 
-                                       class="form-control" 
-                                       id="telefono" 
-                                       name="telefono" 
-                                       placeholder="2234-5678 o 5512-3456">
+                                <label for="telefono" class="form-label"><i class="bi bi-phone"></i> Teléfono</label>
+                                <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="2234-5678 o 5512-3456">
                             </div>
                             <div class="col-md-6">
-                                <label for="email" class="form-label">
-                                    <i class="bi bi-envelope"></i> Email
-                                </label>
-                                <input type="email" 
-                                       class="form-control" 
-                                       id="email" 
-                                       name="email" 
-                                       placeholder="ejemplo@correo.com">
+                                <label for="email" class="form-label"><i class="bi bi-envelope"></i> Email</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="ejemplo@correo.com">
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="direccion" class="form-label">
-                                <i class="bi bi-geo-alt"></i> Dirección
-                            </label>
-                            <textarea class="form-control" 
-                                      id="direccion" 
-                                      name="direccion" 
-                                      rows="2"
-                                      placeholder="Dirección completa del proveedor"></textarea>
+                        <div class="mb-4">
+                            <label for="direccion" class="form-label"><i class="bi bi-geo-alt"></i> Dirección</label>
+                            <textarea class="form-control" id="direccion" name="direccion" rows="2" placeholder="Dirección completa del proveedor"></textarea>
                         </div>
 
                         <hr class="my-4">
 
-                        <!-- Productos que Suministra -->
-                        <h5 class="mb-3 text-primary">
-                            <i class="bi bi-box-seam"></i>
-                            Productos que Suministra
-                        </h5>
+                        <h5 class="mb-3 text-primary"><i class="bi bi-box-seam"></i> Productos que Suministra</h5>
 
                         <div class="mb-3">
-                            <label for="productos_suministra" class="form-label">
-                                <i class="bi bi-list-ul"></i> Productos / Servicios
-                            </label>
-                            <textarea class="form-control" 
-                                      id="productos_suministra" 
-                                      name="productos_suministra" 
-                                      rows="3"
-                                      placeholder="Ej: Oro 18K, Oro 14K, Cadenas de oro, Diamantes, etc."></textarea>
-                            <small class="text-muted">
-                                Liste los productos o servicios que este proveedor ofrece
-                            </small>
+                            <label for="productos_suministra" class="form-label"><i class="bi bi-list-ul"></i> Productos / Servicios</label>
+                            <textarea class="form-control" id="productos_suministra" name="productos_suministra" rows="3" placeholder="Ej: Oro 18K, Oro 14K, Cadenas de oro, Diamantes, etc."></textarea>
+                            <small class="text-muted">Liste los productos o servicios que este proveedor ofrece</small>
                         </div>
 
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   id="activo" 
-                                   name="activo" 
-                                   checked>
-                            <label class="form-check-label" for="activo">
-                                Proveedor activo
-                            </label>
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="activo" name="activo" checked>
+                            <label class="form-check-label" for="activo">Proveedor activo</label>
                         </div>
 
-                        <!-- Botones -->
-                        <div class="d-flex justify-content-end gap-2">
+                        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
                             <a href="lista.php" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i>
-                                Cancelar
+                                <i class="bi bi-x-circle"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i>
-                                Guardar Proveedor
+                            <button type="submit" class="btn btn-primary" id="btnGuardar">
+                                <i class="bi bi-save"></i> Guardar Proveedor
                             </button>
                         </div>
                     </form>
@@ -192,13 +112,10 @@ include '../../includes/navbar.php';
             </div>
         </div>
 
-        <!-- Panel Lateral -->
         <div class="col-lg-4">
-            <!-- Ayuda -->
-            <div class="card mb-3">
-                <div class="card-header bg-info text-white">
-                    <i class="bi bi-lightbulb"></i>
-                    Guía Rápida
+            <div class="card mb-3 shadow-sm">
+                <div class="card-header" style="background-color: #1e3a8a; color: white;">
+                    <i class="bi bi-lightbulb"></i> Guía Rápida
                 </div>
                 <div class="card-body">
                     <h6 class="fw-bold">Datos Obligatorios:</h6>
@@ -224,11 +141,9 @@ include '../../includes/navbar.php';
                 </div>
             </div>
 
-            <!-- Información Técnica -->
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-header bg-success text-white">
-                    <i class="bi bi-database"></i>
-                    Estructura de Datos
+                    <i class="bi bi-database"></i> Estructura de Datos
                 </div>
                 <div class="card-body">
                     <h6 class="fw-bold">Campos de la tabla proveedores:</h6>
@@ -249,8 +164,34 @@ include '../../includes/navbar.php';
     </div>
 </div>
 
+<style>
+.main-content { padding: 20px; min-height: calc(100vh - 120px); }
+.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
+.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
+.card-body { padding: 25px; }
+.form-label { font-weight: 500; margin-bottom: 0.5rem; color: #374151; }
+.form-control, .form-select, textarea { border: 1px solid #d1d5db; border-radius: 6px; }
+.form-control:focus, .form-select:focus, textarea:focus { border-color: #1e3a8a; box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.15); }
+textarea.form-control { resize: vertical; }
+.form-check-input { width: 1.2em; height: 1.2em; margin-top: 0.15em; }
+.form-check-input:checked { background-color: #1e3a8a; border-color: #1e3a8a; }
+h5.text-primary { color: #1e3a8a !important; font-weight: 600; }
+h6.fw-bold { color: #1a1a1a; font-size: 0.95rem; margin-bottom: 0.75rem; }
+code { background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #1e3a8a; }
+hr { opacity: 0.1; }
+@media (max-width: 575.98px) {
+    .main-content { padding: 15px 10px; }
+    .page-header h1 { font-size: 1.5rem; }
+    .card-body { padding: 15px; }
+    h5 { font-size: 1.1rem; }
+    .btn { width: 100%; }
+}
+@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
+@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
+@media (max-width: 767.98px) { .btn, .form-control, .form-select, textarea { min-height: 44px; } .form-check-input { width: 1.35em; height: 1.35em; } }
+</style>
+
 <script>
-// Validación del formulario
 document.getElementById('formProveedor').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -258,23 +199,52 @@ document.getElementById('formProveedor').addEventListener('submit', function(e) 
     
     if (nombre.length < 3) {
         alert('El nombre del proveedor debe tener al menos 3 caracteres');
+        document.getElementById('nombre').focus();
         return;
     }
     
-    // API insertará en:
-    // INSERT INTO proveedores (nombre, empresa, contacto, telefono, email, direccion, productos_suministra, activo)
-    // VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    
-    alert('Proveedor guardado exitosamente');
-    
     const formData = new FormData(this);
-    console.log('Datos del proveedor:', Object.fromEntries(formData));
+    const datos = {
+        nombre: nombre,
+        empresa: formData.get('empresa') || null,
+        contacto: formData.get('contacto') || null,
+        telefono: formData.get('telefono') || null,
+        email: formData.get('email') || null,
+        direccion: formData.get('direccion') || null,
+        productos_suministra: formData.get('productos_suministra') || null,
+        activo: formData.get('activo') ? 1 : 0
+    };
     
-    // window.location.href = 'lista.php';
+    const btnGuardar = document.getElementById('btnGuardar');
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+    
+    /* TODO FASE 5: Descomentar
+    fetch('<?php echo BASE_URL; ?>api/proveedores/crear.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Proveedor guardado exitosamente');
+            setTimeout(() => window.location.href = 'lista.php', 1500);
+        } else {
+            alert(data.message);
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Proveedor';
+        }
+    });
+    */
+    
+    console.log('Datos proveedor:', datos);
+    setTimeout(() => {
+        alert('MODO DESARROLLO: Proveedor guardado.\n\n' + JSON.stringify(datos, null, 2));
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Proveedor';
+    }, 1000);
 });
 </script>
 
-<?php
-// Incluir footer
-include '../../includes/footer.php';
-?>
+<?php include '../../includes/footer.php'; ?>
