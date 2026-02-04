@@ -1,23 +1,6 @@
 <?php
 /**
- * ================================================
- * API: ELIMINAR PRODUCTO
- * ================================================
- * Endpoint para eliminar (desactivar) un producto
- * 
- * Método: POST
- * Autenticación: Requerida
- * Permisos: productos.eliminar
- * 
- * Parámetros POST:
- * - id: ID del producto a eliminar
- * 
- * Respuesta exitosa:
- * {
- *   "success": true,
- *   "data": null,
- *   "message": "Producto eliminado exitosamente"
- * }
+ * API - ELIMINAR (DESACTIVAR) PRODUCTO
  */
 
 require_once '../../config.php';
@@ -33,40 +16,45 @@ validar_metodo_http('POST');
 verificar_api_permiso('productos', 'eliminar');
 
 try {
-    // Validar ID requerido
+    // Leer JSON del body
+    $json_input = file_get_contents('php://input');
+    $datos_json = json_decode($json_input, true);
+    
+    // Merge con $_POST para compatibilidad
+    if (json_last_error() === JSON_ERROR_NONE && !empty($datos_json)) {
+        $_POST = array_merge($_POST, $datos_json);
+    }
+    
+    // Validar campos requeridos
     validar_campos_requeridos(['id'], 'POST');
     
     $id = obtener_post('id', null, 'int');
     
-    // Verificar que el producto exista
-    if (!Producto::existe($id)) {
-        responder_json(
-            false,
-            null,
-            'El producto no existe',
-            'PRODUCTO_NO_ENCONTRADO'
-        );
+    // Verificar que el producto existe
+    $producto = Producto::obtenerPorId($id);
+    
+    if (!$producto) {
+        responder_json(false, null, 'Producto no encontrado', 'PRODUCTO_NO_ENCONTRADO');
     }
     
-    // Eliminar producto (soft delete)
+    // Desactivar producto (soft delete)
     $resultado = Producto::eliminar($id);
     
     if (!$resultado) {
-        throw new Exception('No se pudo eliminar el producto');
+        responder_json(false, null, 'No se pudo desactivar el producto', 'ERROR_ELIMINACION');
     }
     
-    // Responder con éxito
+    // Respuesta exitosa
     responder_json(
         true,
-        null,
-        'Producto eliminado exitosamente'
+        [
+            'id' => $id,
+            'producto' => $producto['nombre']
+        ],
+        'Producto desactivado exitosamente',
+        'PRODUCTO_DESACTIVADO'
     );
     
 } catch (Exception $e) {
-    responder_json(
-        false,
-        null,
-        'Error al eliminar producto: ' . $e->getMessage(),
-        'ERROR_ELIMINAR_PRODUCTO'
-    );
+    responder_json(false, null, $e->getMessage(), 'ERROR_ELIMINACION');
 }

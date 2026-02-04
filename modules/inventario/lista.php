@@ -4,11 +4,8 @@
  * MÓDULO INVENTARIO - LISTA
  * ================================================
  * 
- * TODO FASE 5: Conectar con API
- * GET /api/inventario/lista.php
- * 
- * Parámetros: buscar, categoria_id, estado_stock, sucursal_id
- * Respuesta: { success, data: [...productos], resumen: {...stats} }
+ * Vista actualizada - FASE 5.1 COMPLETADA
+ * Conectada con API mediante api-helper.js e inventario.js
  */
 
 require_once '../../config.php';
@@ -36,7 +33,7 @@ include '../../includes/navbar.php';
                     <a href="agregar.php" class="btn btn-primary">
                         <i class="bi bi-plus-circle"></i> <span class="d-none d-sm-inline">Nuevo</span>
                     </a>
-                    <a href="transferencias.php" class="btn btn-warning">
+                    <a href="transferir.php" class="btn btn-warning">
                         <i class="bi bi-arrow-left-right"></i> <span class="d-none d-sm-inline">Transferencias</span>
                     </a>
                     <?php endif; ?>
@@ -159,7 +156,7 @@ include '../../includes/navbar.php';
                     <small class="text-muted" id="contadorProductos">Mostrando 0 productos</small>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <button class="btn btn-sm btn-secondary" onclick="exportarExcel()">
+                    <button class="btn btn-sm btn-secondary" onclick="Inventario.exportarExcel()">
                         <i class="bi bi-file-earmark-excel"></i> Exportar
                     </button>
                 </div>
@@ -176,203 +173,50 @@ include '../../includes/navbar.php';
 .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); }
 .stat-card.azul { border-left-color: #1e3a8a; }
 .stat-card.verde { border-left-color: #22c55e; }
-.stat-card.amarillo { border-left-color: #eab308; }
+.stat-card.amarillo { border-left-color: #f59e0b; }
 .stat-card.rojo { border-left-color: #ef4444; }
-.stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
-.stat-card.azul .stat-icon { background: rgba(30, 58, 138, 0.1); color: #1e3a8a; }
-.stat-card.verde .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-.stat-card.amarillo .stat-icon { background: rgba(234, 179, 8, 0.1); color: #eab308; }
-.stat-card.rojo .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-.stat-value { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin: 8px 0; }
-.stat-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
-table thead th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; padding: 12px; }
-table tbody td { padding: 12px; vertical-align: middle; }
-.badge { padding: 0.35em 0.65em; font-size: 0.85em; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .stat-card { padding: 12px; }
-    .stat-icon { width: 38px; height: 38px; font-size: 18px; margin-bottom: 8px; }
-    .stat-value { font-size: 1.25rem; }
-    table { font-size: 0.85rem; }
-    table thead th, table tbody td { padding: 8px 6px; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
+.stat-icon { font-size: 2rem; color: #6b7280; margin-bottom: 8px; }
+.stat-value { font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+.stat-label { font-size: 0.875rem; color: #6b7280; font-weight: 500; }
+.card { border: 1px solid #e5e7eb; border-radius: 12px; }
+.card-header { font-weight: 600; border-radius: 12px 12px 0 0 !important; }
+.table { margin-bottom: 0; }
+.table thead th { border-bottom: 2px solid #1e3a8a; font-weight: 600; font-size: 0.9rem; padding: 12px; }
+.table tbody td { padding: 12px; vertical-align: middle; font-size: 0.9rem; }
+.table-hover tbody tr:hover { background-color: #f8fafc; }
+.btn-group .btn { padding: 0.375rem 0.5rem; }
+.form-label { font-weight: 500; color: #374151; margin-bottom: 0.5rem; }
+.form-control, .form-select { border-radius: 8px; border: 1px solid #d1d5db; }
+.form-control:focus, .form-select:focus { border-color: #1e3a8a; box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.15); }
+.badge { padding: 0.35em 0.65em; font-weight: 500; }
 @media (max-width: 767.98px) { .btn, .form-control, .form-select { min-height: 44px; } }
 </style>
 
+<!-- Scripts específicos del módulo -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/api-helper.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/inventario.js"></script>
+
 <script>
+// Inicializar módulo al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
-    cargarInventario();
-    cargarCategorias();
+    // Configurar permisos
+    Inventario.state.puedeEditar = <?php echo tiene_permiso('inventario', 'editar') ? 'true' : 'false'; ?>;
+    Inventario.state.puedeEliminar = <?php echo tiene_permiso('inventario', 'eliminar') ? 'true' : 'false'; ?>;
     
-    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+    // Cargar inventario
+    Inventario.lista.cargar();
+    
+    // Cargar categorías en filtro
+    Inventario.categorias.cargarFiltro();
+    
+    // Event listeners para filtros con debounce en búsqueda
+    document.getElementById('searchInput').addEventListener('input', debounce(aplicarFiltros, 500));
     document.getElementById('filterCategoria').addEventListener('change', aplicarFiltros);
     document.getElementById('filterEstado').addEventListener('change', aplicarFiltros);
     document.getElementById('filterSucursal').addEventListener('change', aplicarFiltros);
 });
-
-function cargarInventario() {
-    /* TODO FASE 5: Descomentar
-    const params = new URLSearchParams({
-        buscar: document.getElementById('searchInput').value,
-        categoria_id: document.getElementById('filterCategoria').value,
-        estado_stock: document.getElementById('filterEstado').value,
-        sucursal_id: document.getElementById('filterSucursal').value
-    });
-    
-    fetch('<?php echo BASE_URL; ?>api/inventario/lista.php?' + params)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderizarProductos(data.data);
-                actualizarEstadisticas(data.resumen);
-            } else {
-                mostrarError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarError('Error al cargar el inventario');
-        });
-    */
-    
-    setTimeout(() => {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
-        document.getElementById('noResults').innerHTML = '<i class="bi bi-database" style="font-size: 48px; opacity: 0.3;"></i><p class="mt-3 text-muted">MODO DESARROLLO: Esperando API</p>';
-    }, 1500);
-}
-
-function cargarCategorias() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/categorias/lista.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('filterCategoria');
-                data.data.forEach(cat => {
-                    const option = document.createElement('option');
-                    option.value = cat.id;
-                    option.textContent = cat.nombre;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
-}
-
-function renderizarProductos(productos) {
-    const tbody = document.getElementById('productosBody');
-    
-    if (productos.length === 0) {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
-        return;
-    }
-    
-    let html = '';
-    productos.forEach(p => {
-        const estadoStock = calcularEstadoStock(p.stock_total, p.stock_minimo);
-        
-        html += `
-            <tr>
-                <td class="fw-bold text-primary">${p.codigo}</td>
-                <td>
-                    <div class="fw-bold">${p.nombre}</div>
-                    <small class="text-muted">
-                        <i class="bi bi-weight"></i> ${p.peso_gramos}g
-                        ${p.es_por_peso ? '<span class="badge bg-warning text-dark ms-1">Por peso</span>' : ''}
-                    </small>
-                </td>
-                <td class="d-none d-lg-table-cell"><span class="badge bg-secondary">${p.categoria_nombre}</span></td>
-                <td class="d-none d-md-table-cell"><div class="fw-bold text-success">Q ${formatearMoneda(p.precio_publico)}</div></td>
-                <td class="text-center d-none d-xl-table-cell">
-                    <span class="badge ${p.stock_los_arcos > 0 ? 'bg-info' : 'bg-secondary'}">${p.stock_los_arcos}</span>
-                </td>
-                <td class="text-center d-none d-xl-table-cell">
-                    <span class="badge ${p.stock_chinaca > 0 ? 'bg-info' : 'bg-secondary'}">${p.stock_chinaca}</span>
-                </td>
-                <td class="text-center">
-                    <span class="fw-bold">${p.stock_total}</span>
-                    <small class="text-muted d-block">Min: ${p.stock_minimo}</small>
-                </td>
-                <td>${getBadgeEstadoStock(estadoStock)}</td>
-                <td class="text-center">
-                    <div class="btn-group">
-                        <a href="ver.php?id=${p.id}" class="btn btn-sm btn-info" title="Ver"><i class="bi bi-eye"></i></a>
-                        <?php if (tiene_permiso('inventario', 'editar')): ?>
-                        <a href="editar.php?id=${p.id}" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil"></i></a>
-                        <?php endif; ?>
-                        <?php if (tiene_permiso('inventario', 'eliminar')): ?>
-                        <button class="btn btn-sm btn-danger" onclick="eliminarProducto(${p.id})" title="Eliminar"><i class="bi bi-trash"></i></button>
-                        <?php endif; ?>
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
-    
-    tbody.innerHTML = html;
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('tableContainer').style.display = 'block';
-    document.getElementById('tableFooter').style.display = 'block';
-    document.getElementById('contadorProductos').textContent = `Mostrando ${productos.length} productos`;
-    document.getElementById('tituloTabla').textContent = `Listado de Productos (${productos.length})`;
-}
-
-function actualizarEstadisticas(resumen) {
-    document.getElementById('statTotal').textContent = resumen.total || 0;
-    document.getElementById('statDisponibles').textContent = resumen.disponibles || 0;
-    document.getElementById('statBajoStock').textContent = resumen.bajo_stock || 0;
-    document.getElementById('statAgotados').textContent = resumen.agotados || 0;
-}
-
-function calcularEstadoStock(stockTotal, stockMinimo) {
-    if (stockTotal === 0) return 'agotado';
-    if (stockTotal <= stockMinimo) return 'bajo_stock';
-    return 'disponible';
-}
-
-function getBadgeEstadoStock(estado) {
-    const badges = {
-        'disponible': '<span class="badge bg-success">Disponible</span>',
-        'bajo_stock': '<span class="badge bg-warning">Stock Bajo</span>',
-        'agotado': '<span class="badge bg-danger">Agotado</span>'
-    };
-    return badges[estado] || '';
-}
-
-function aplicarFiltros() { cargarInventario(); }
-
-function limpiarFiltros() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('filterCategoria').value = '';
-    document.getElementById('filterEstado').value = '';
-    document.getElementById('filterSucursal').value = '';
-    cargarInventario();
-}
-
-function eliminarProducto(id) {
-    if (confirm('¿Está seguro de eliminar este producto?\n\nEsta acción no se puede deshacer.')) {
-        alert('MODO DESARROLLO: Eliminar producto #' + id);
-    }
-}
-
-function exportarExcel() {
-    alert('MODO DESARROLLO: Exportar a Excel - Pendiente implementar');
-}
-
-function formatearMoneda(monto) {
-    return parseFloat(monto).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function mostrarError(mensaje) {
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('noResults').style.display = 'block';
-    document.getElementById('noResults').innerHTML = `<i class="bi bi-exclamation-triangle text-danger" style="font-size: 48px;"></i><p class="mt-3 text-danger">${mensaje}</p>`;
-}
 </script>
 
 <?php include '../../includes/footer.php'; ?>

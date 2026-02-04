@@ -79,7 +79,8 @@ include '../../includes/navbar.php';
                                 </div>
                                 <div class="col-md-4">
                                     <label for="codigo_barras" class="form-label"><i class="bi bi-upc"></i> Código de Barras</label>
-                                    <input type="text" class="form-control" id="codigo_barras" name="codigo_barras">
+                                    <input type="text" class="form-control" id="codigo_barras" name="codigo_barras" readonly>
+                                    <small class="text-muted">El código de barras no se puede editar</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="categoria_id" class="form-label"><i class="bi bi-folder"></i> Categoría *</label>
@@ -180,30 +181,13 @@ include '../../includes/navbar.php';
             </div>
 
             <div class="col-lg-4">
-                <div class="card mb-3 shadow-sm">
+                <div class="card shadow-sm">
                     <div class="card-header" style="background-color: #1e3a8a; color: white;"><i class="bi bi-info-circle"></i> Información Actual</div>
                     <div class="card-body" id="infoActual">
                         <div class="text-center text-muted py-3">
                             <div class="spinner-border spinner-border-sm"></div>
                             <p class="mt-2 mb-0 small">Cargando...</p>
                         </div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="card-header"><i class="bi bi-lightning"></i> Acciones Rápidas</div>
-                    <div class="list-group list-group-flush">
-                        <a href="ver.php?id=<?php echo $producto_id; ?>" class="list-group-item list-group-item-action">
-                            <i class="bi bi-clock-history"></i> Ver historial de movimientos
-                        </a>
-                        <a href="transferencias.php?producto_id=<?php echo $producto_id; ?>" class="list-group-item list-group-item-action">
-                            <i class="bi bi-arrow-left-right"></i> Transferir entre sucursales
-                        </a>
-                        <?php if (tiene_permiso('inventario', 'eliminar')): ?>
-                        <a href="#" onclick="eliminarProducto(); return false;" class="list-group-item list-group-item-action text-danger">
-                            <i class="bi bi-trash"></i> Eliminar producto
-                        </a>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -238,170 +222,20 @@ hr { opacity: 0.1; }
     .main-content { padding: 15px 10px; }
     .page-header h1 { font-size: 1.5rem; }
     .card-body { padding: 15px; }
-    h5 { font-size: 1.1rem; }
-    .btn { width: 100%; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) {
-    .btn, .form-control, .form-select, textarea { min-height: 44px; }
-    .form-check-input { width: 1.35em; height: 1.35em; }
 }
 </style>
 
+<!-- Scripts específicos del módulo -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/api-helper.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/inventario.js"></script>
+
 <script>
+// Inicializar formulario de edición
 document.addEventListener('DOMContentLoaded', function() {
-    cargarDatosProducto();
-});
-
-function cargarDatosProducto() {
     const productoId = <?php echo $producto_id; ?>;
-    
-    /* TODO FASE 5: Descomentar
-    Promise.all([
-        fetch('<?php echo BASE_URL; ?>api/inventario/ver.php?id=' + productoId),
-        fetch('<?php echo BASE_URL; ?>api/categorias/lista.php')
-    ])
-    .then(responses => Promise.all(responses.map(r => r.json())))
-    .then(([productoData, categoriasData]) => {
-        if (productoData.success && categoriasData.success) {
-            llenarCategorias(categoriasData.data);
-            llenarFormulario(productoData.data);
-            mostrarInfoActual(productoData.data);
-        } else {
-            mostrarError('No se pudo cargar el producto');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        mostrarError('Error al cargar los datos');
-    });
-    */
-    
-    setTimeout(() => mostrarError('MODO DESARROLLO: Esperando conexión con API'), 1500);
-}
-
-function llenarCategorias(categorias) {
-    const select = document.getElementById('categoria_id');
-    categorias.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat.id;
-        option.textContent = cat.nombre;
-        select.appendChild(option);
-    });
-}
-
-function llenarFormulario(producto) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-    
-    document.getElementById('productoCodigo').textContent = 'Código: ' + producto.codigo;
-    document.getElementById('codigo').value = producto.codigo;
-    document.getElementById('codigo_barras').value = producto.codigo_barras || '';
-    document.getElementById('categoria_id').value = producto.categoria_id;
-    document.getElementById('nombre').value = producto.nombre;
-    document.getElementById('descripcion').value = producto.descripcion || '';
-    document.getElementById('peso_gramos').value = producto.peso_gramos || '';
-    document.getElementById('largo_cm').value = producto.largo_cm || '';
-    document.getElementById('estilo').value = producto.estilo || '';
-    document.getElementById('es_por_peso').checked = producto.es_por_peso == 1;
-    document.getElementById('precio_publico').value = producto.precio_publico;
-    document.getElementById('precio_mayorista').value = producto.precio_mayorista || '';
-    document.getElementById('stock_los_arcos_display').value = producto.stock_los_arcos + ' unidades';
-    document.getElementById('stock_chinaca_display').value = producto.stock_chinaca + ' unidades';
-    document.getElementById('stock_minimo').value = producto.stock_minimo;
-    document.getElementById('activo').checked = producto.activo == 1;
-}
-
-function mostrarInfoActual(producto) {
-    const stockTotal = parseInt(producto.stock_los_arcos) + parseInt(producto.stock_chinaca);
-    let badge = '';
-    
-    if (stockTotal == 0) badge = '<span class="badge bg-danger">Agotado</span>';
-    else if (stockTotal <= producto.stock_minimo) badge = '<span class="badge bg-warning">Stock Bajo</span>';
-    else badge = '<span class="badge bg-success">Disponible</span>';
-    
-    document.getElementById('infoActual').innerHTML = `
-        <div><small class="text-muted d-block">Stock Total:</small><h4 class="mb-0 text-primary">${stockTotal} unidades</h4></div>
-        <div><small class="text-muted d-block">Estado:</small>${badge}</div>
-    `;
-}
-
-function mostrarError(mensaje) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMessage').textContent = mensaje;
-}
-
-document.getElementById('formProducto').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const precioPublico = parseFloat(document.getElementById('precio_publico').value);
-    const precioMayorista = parseFloat(document.getElementById('precio_mayorista').value) || 0;
-    
-    if (precioMayorista > 0 && precioMayorista >= precioPublico) {
-        alert('El precio mayorista debe ser menor que el precio público');
-        return;
-    }
-    
-    const formData = new FormData(this);
-    const datos = {
-        id: formData.get('id'),
-        codigo: formData.get('codigo'),
-        codigo_barras: formData.get('codigo_barras') || null,
-        categoria_id: formData.get('categoria_id'),
-        nombre: formData.get('nombre'),
-        descripcion: formData.get('descripcion') || null,
-        peso_gramos: parseFloat(formData.get('peso_gramos')) || null,
-        largo_cm: parseFloat(formData.get('largo_cm')) || null,
-        estilo: formData.get('estilo') || null,
-        es_por_peso: formData.get('es_por_peso') ? 1 : 0,
-        stock_minimo: parseInt(formData.get('stock_minimo')),
-        activo: formData.get('activo') ? 1 : 0,
-        precio_publico: precioPublico,
-        precio_mayorista: precioMayorista
-    };
-    
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.disabled = true;
-    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-    
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/inventario/actualizar.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Producto actualizado exitosamente');
-            setTimeout(() => window.location.href = 'ver.php?id=' + datos.id, 1500);
-        } else {
-            alert(data.message);
-            btnGuardar.disabled = false;
-            btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Cambios';
-        }
-    });
-    */
-    
-    console.log('Datos:', datos);
-    setTimeout(() => {
-        alert('MODO DESARROLLO: Cambios listos.\n\n' + JSON.stringify(datos, null, 2));
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Cambios';
-    }, 1000);
+    Inventario.editar.init(productoId);
 });
-
-document.getElementById('codigo').addEventListener('blur', function(e) {
-    e.target.value = e.target.value.toUpperCase();
-});
-
-function eliminarProducto() {
-    if (confirm('¿Está seguro de eliminar este producto?\n\nEsta acción no se puede deshacer.')) {
-        alert('MODO DESARROLLO: Eliminar producto - Pendiente API');
-    }
-}
 </script>
 
 <?php include '../../includes/footer.php'; ?>

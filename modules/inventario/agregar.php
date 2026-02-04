@@ -81,29 +81,7 @@ include '../../includes/navbar.php';
                         </h5>
 
                         <div class="row g-3 mb-3">
-                            <div class="col-md-4">
-                                <label for="codigo" class="form-label">
-                                    <i class="bi bi-upc-scan"></i> Código *
-                                </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="codigo" 
-                                       name="codigo" 
-                                       placeholder="AN-001"
-                                       required>
-                                <div class="form-text">Código único del producto</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="codigo_barras" class="form-label">
-                                    <i class="bi bi-upc"></i> Código de Barras
-                                </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="codigo_barras" 
-                                       name="codigo_barras" 
-                                       placeholder="7501234567890">
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-12">
                                 <label for="categoria_id" class="form-label">
                                     <i class="bi bi-folder"></i> Categoría *
                                 </label>
@@ -203,7 +181,7 @@ include '../../includes/navbar.php';
                         </h5>
 
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label for="precio_publico" class="form-label">
                                     <i class="bi bi-tag"></i> Precio Público (Q) *
                                 </label>
@@ -303,30 +281,22 @@ include '../../includes/navbar.php';
 
         <!-- Panel Lateral -->
         <div class="col-lg-4">
-            <!-- Ayuda -->
+            <!-- Consejos -->
             <div class="card mb-3 shadow-sm">
                 <div class="card-header" style="background-color: #1e3a8a; color: white;">
                     <i class="bi bi-lightbulb"></i>
-                    Estructura de Datos
+                    Consejos
                 </div>
                 <div class="card-body">
-                    <h6 class="fw-bold">Tablas involucradas:</h6>
-                    <ul class="small mb-3">
-                        <li><strong>productos:</strong> Info básica</li>
-                        <li><strong>precios_producto:</strong> Precios por tipo</li>
-                        <li><strong>inventario:</strong> Stock por sucursal</li>
-                    </ul>
-
-                    <h6 class="fw-bold">Venta por peso:</h6>
+                    <h6 class="fw-bold"><i class="bi bi-scale"></i> Venta por Peso</h6>
                     <p class="small mb-3">
-                        Active "por peso" para oro/plata que se vende por gramo.
-                        El precio se calculará: peso × precio_por_gramo
+                        Active esta opción para productos que se venden por gramo (oro/plata).
+                        El precio final se calculará multiplicando el peso por el precio.
                     </p>
 
-                    <h6 class="fw-bold">Stock Mínimo:</h6>
+                    <h6 class="fw-bold"><i class="bi bi-exclamation-triangle"></i> Stock Mínimo</h6>
                     <p class="small mb-0">
-                        Define cuándo alertar sobre stock bajo.
-                        Se aplica al total de ambas sucursales.
+                        El sistema le alertará cuando el stock total baje de este número.
                     </p>
                 </div>
             </div>
@@ -341,6 +311,7 @@ include '../../includes/navbar.php';
                     <div class="mb-3 pb-3 border-bottom">
                         <small class="text-muted d-block">Stock Total:</small>
                         <h4 id="preview-stock-total" class="mb-0 text-primary">0</h4>
+                        <small class="text-muted">unidades</small>
                     </div>
                     <div>
                         <small class="text-muted d-block">Precio Mayorista:</small>
@@ -564,151 +535,10 @@ function cargarCategorias() {
         .catch(error => console.error('Error:', error));
     */
     
-    // Categorías dummy para desarrollo
-    const categorias = [
-        'Anillos', 'Aretes', 'Collares', 'Pulseras', 
-        'Cadenas', 'Dijes', 'Relojes', 'Otros'
-    ];
-    
-    const select = document.getElementById('categoria_id');
-    categorias.forEach((cat, index) => {
-        const option = document.createElement('option');
-        option.value = index + 1;
-        option.textContent = cat;
-        select.appendChild(option);
-    });
-}
 
-/**
- * Calcular stock total
- */
-function calcularStockTotal() {
-    const losArcos = parseInt(document.getElementById('stock_los_arcos').value) || 0;
-    const chinaca = parseInt(document.getElementById('stock_chinaca').value) || 0;
-    const total = losArcos + chinaca;
-    
-    document.getElementById('preview-stock-total').textContent = total;
-}
+<!-- Scripts específicos del módulo -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/api-helper.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/agregar-producto.js"></script>
 
-/**
- * Actualizar precio mayorista en vista previa
- */
-function actualizarPrecioMayorista() {
-    const precio = parseFloat(document.getElementById('precio_mayorista').value) || 0;
-    document.getElementById('preview-precio-mayorista').textContent = 'Q ' + precio.toFixed(2);
-}
-
-/**
- * Validación y envío del formulario
- * TODO FASE 5: Conectar con API
- */
-document.getElementById('formProducto').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Validaciones adicionales
-    const precioPublico = parseFloat(document.getElementById('precio_publico').value);
-    const precioMayorista = parseFloat(document.getElementById('precio_mayorista').value) || 0;
-    
-    if (precioMayorista > 0 && precioMayorista >= precioPublico) {
-        mostrarAlerta('El precio mayorista debe ser menor que el precio público', 'warning');
-        return;
-    }
-    
-    const stockTotal = parseInt(document.getElementById('stock_los_arcos').value) + 
-                       parseInt(document.getElementById('stock_chinaca').value);
-    
-    if (stockTotal === 0) {
-        if (!confirm('No ha ingresado stock inicial. ¿Desea continuar?')) {
-            return;
-        }
-    }
-    
-    // Preparar datos
-    const formData = new FormData(this);
-    const datos = {
-        // Productos
-        codigo: formData.get('codigo'),
-        codigo_barras: formData.get('codigo_barras') || null,
-        categoria_id: formData.get('categoria_id'),
-        nombre: formData.get('nombre'),
-        descripcion: formData.get('descripcion') || null,
-        peso_gramos: parseFloat(formData.get('peso_gramos')) || null,
-        largo_cm: parseFloat(formData.get('largo_cm')) || null,
-        estilo: formData.get('estilo') || null,
-        es_por_peso: formData.get('es_por_peso') ? 1 : 0,
-        stock_minimo: parseInt(formData.get('stock_minimo')),
-        activo: formData.get('activo') ? 1 : 0,
-        
-        // Precios
-        precio_publico: parseFloat(formData.get('precio_publico')),
-        precio_mayorista: precioMayorista,
-        
-        // Stock por sucursal
-        stock_los_arcos: parseInt(formData.get('stock_los_arcos')),
-        stock_chinaca: parseInt(formData.get('stock_chinaca'))
-    };
-    
-    // Deshabilitar botón
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.disabled = true;
-    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-    
-    // TODO FASE 5: Descomentar y conectar
-    /*
-    fetch('<?php echo BASE_URL; ?>api/inventario/crear.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(datos)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            mostrarAlerta('Producto registrado exitosamente', 'success');
-            setTimeout(() => {
-                window.location.href = 'ver.php?id=' + data.producto_id;
-            }, 1500);
-        } else {
-            mostrarAlerta(data.message, 'error');
-            btnGuardar.disabled = false;
-            btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Producto';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        mostrarAlerta('Error al guardar el producto', 'error');
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Producto';
-    });
-    */
-    
-    // Modo desarrollo
-    console.log('Datos del producto:', datos);
-    setTimeout(() => {
-        alert('MODO DESARROLLO: Producto listo para guardar.\n\nDatos:\n' + JSON.stringify(datos, null, 2));
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Producto';
-    }, 1000);
-});
-
-/**
- * Auto-mayúscula en código
- */
-document.getElementById('codigo').addEventListener('blur', function(e) {
-    e.target.value = e.target.value.toUpperCase();
-});
-
-/**
- * Utilidades
- */
-function mostrarAlerta(mensaje, tipo) {
-    // TODO: Implementar sistema de notificaciones
-    alert(mensaje);
-}
-</script>
-
-<?php
-// Incluir footer
-include '../../includes/footer.php';
-?>
+<?php include '../../includes/footer.php'; ?>

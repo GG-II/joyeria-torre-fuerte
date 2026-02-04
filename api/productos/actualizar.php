@@ -1,21 +1,6 @@
 <?php
 /**
- * ================================================
  * API: ACTUALIZAR PRODUCTO
- * ================================================
- * Endpoint para actualizar un producto existente
- * Permite actualización parcial de campos
- * 
- * Método: POST
- * Autenticación: Requerida
- * Permisos: productos.editar
- * 
- * Parámetros POST requeridos:
- * - id: ID del producto a actualizar
- * 
- * Parámetros POST opcionales (se actualizan solo los enviados):
- * - codigo, nombre, categoria_id, descripcion, proveedor_id,
- *   es_por_peso, peso_gramos, largo_cm, imagen, codigo_barras
  */
 
 require_once '../../config.php';
@@ -31,115 +16,109 @@ validar_metodo_http('POST');
 verificar_api_permiso('productos', 'editar');
 
 try {
+    // Leer JSON del body
+    $json_input = file_get_contents('php://input');
+    $datos_json = json_decode($json_input, true);
+    
+    if (json_last_error() === JSON_ERROR_NONE && !empty($datos_json)) {
+        $_POST = array_merge($_POST, $datos_json);
+    }
+    
     // Validar ID requerido
     validar_campos_requeridos(['id'], 'POST');
     
     $id = obtener_post('id', null, 'int');
     
-    // Verificar que el producto exista y obtener datos actuales
+    // Verificar que el producto exista
     $producto_actual = Producto::obtenerPorId($id);
     
     if (!$producto_actual) {
-        responder_json(
-            false,
-            null,
-            'El producto no existe',
-            'PRODUCTO_NO_ENCONTRADO'
-        );
+        responder_json(false, null, 'El producto no existe', 'PRODUCTO_NO_ENCONTRADO');
     }
     
-    // ================================================
-    // PREPARAR DATOS COMPLETOS (mezclar actual + nuevo)
-    // ================================================
-    
-    $datos = [
+    // Preparar datos para actualizar (solo los campos enviados)
+    $datos_actualizacion = [
         'codigo' => isset($_POST['codigo']) ? obtener_post('codigo', null, 'string') : $producto_actual['codigo'],
         'nombre' => isset($_POST['nombre']) ? obtener_post('nombre', null, 'string') : $producto_actual['nombre'],
         'categoria_id' => isset($_POST['categoria_id']) ? obtener_post('categoria_id', null, 'int') : $producto_actual['categoria_id'],
         'codigo_barras' => isset($_POST['codigo_barras']) ? obtener_post('codigo_barras', null, 'string') : $producto_actual['codigo_barras'],
         'descripcion' => isset($_POST['descripcion']) ? obtener_post('descripcion', null, 'string') : $producto_actual['descripcion'],
-        'proveedor_id' => isset($_POST['proveedor_id']) ? obtener_post('proveedor_id', null, 'int') : $producto_actual['proveedor_id'],
-        'es_por_peso' => isset($_POST['es_por_peso']) ? obtener_post('es_por_peso', 0, 'int') : $producto_actual['es_por_peso'],
         'peso_gramos' => isset($_POST['peso_gramos']) ? obtener_post('peso_gramos', null, 'float') : $producto_actual['peso_gramos'],
-        'estilo' => isset($_POST['estilo']) ? obtener_post('estilo', null, 'string') : $producto_actual['estilo'],
         'largo_cm' => isset($_POST['largo_cm']) ? obtener_post('largo_cm', null, 'float') : $producto_actual['largo_cm'],
-        'imagen' => isset($_POST['imagen']) ? obtener_post('imagen', null, 'string') : $producto_actual['imagen']
+        'estilo' => isset($_POST['estilo']) ? obtener_post('estilo', null, 'string') : $producto_actual['estilo'],
+        'es_por_peso' => isset($_POST['es_por_peso']) ? obtener_post('es_por_peso', 0, 'int') : $producto_actual['es_por_peso'],
+        'activo' => isset($_POST['activo']) ? obtener_post('activo', 1, 'int') : $producto_actual['activo']
     ];
     
-    // ================================================
-    // VALIDACIONES MANUALES
-    // ================================================
-    $errores = [];
-    
-    // Validar código único (si cambió)
-    if ($datos['codigo'] !== $producto_actual['codigo']) {
-        if (empty($datos['codigo'])) {
-            $errores[] = 'El código no puede estar vacío';
-        } elseif (Producto::existeCodigo($datos['codigo'], $id)) {
-            $errores[] = 'El código ya está en uso';
+    // Validar que el código no esté duplicado
+    if ($datos_actualizacion['codigo'] !== $producto_actual['codigo']) {
+        if (db_exists('productos', 'codigo = ? AND id != ?', [$datos_actualizacion['codigo'], $id])) {
+            responder_json(false, null, 'El código ya está en uso por otro producto', 'CODIGO_DUPLICADO');
         }
     }
     
-    // Validar nombre
-    if (empty($datos['nombre'])) {
-        $errores[] = 'El nombre no puede estar vacío';
-    }
-    
-    // Validar categoría
-    if (empty($datos['categoria_id']) || $datos['categoria_id'] <= 0) {
-        $errores[] = 'La categoría no es válida';
-    }
-    
-    // Validar código de barras único (si cambió y no está vacío)
-    if (!empty($datos['codigo_barras']) && $datos['codigo_barras'] !== $producto_actual['codigo_barras']) {
-        if (Producto::existeCodigoBarras($datos['codigo_barras'], $id)) {
-            $errores[] = 'El código de barras ya está en uso';
-        }
-    }
-    
-    // Validar peso si es producto por peso
-    if ($datos['es_por_peso'] == 1) {
-        if (empty($datos['peso_gramos']) || $datos['peso_gramos'] <= 0) {
-            $errores[] = 'El peso en gramos es requerido para productos por peso';
-        }
-    }
-    
-    // Si hay errores de validación
-    if (!empty($errores)) {
-        responder_json(
-            false,
-            [
-                'errores' => $errores
-            ],
-            'Errores de validación: ' . implode(', ', $errores),
-            'VALIDACION_FALLIDA'
-        );
-    }
-    
-    // ================================================
-    // ACTUALIZAR PRODUCTO (ahora con datos completos)
-    // ================================================
-    $resultado = Producto::actualizar($id, $datos);
+    // Actualizar producto
+    $resultado = Producto::actualizar($id, $datos_actualizacion);
     
     if (!$resultado) {
-        throw new Exception('No se pudo actualizar el producto');
+        responder_json(false, null, 'No se pudo actualizar el producto', 'ERROR_ACTUALIZACION');
     }
     
-    // Obtener el producto actualizado
-    $producto = Producto::obtenerPorId($id);
+    // Actualizar precios si se enviaron
+    if (isset($_POST['precio_publico']) || isset($_POST['precio_mayorista']) || isset($_POST['stock_minimo'])) {
+        $precio_publico = isset($_POST['precio_publico']) ? obtener_post('precio_publico', null, 'float') : null;
+        $precio_mayorista = isset($_POST['precio_mayorista']) ? obtener_post('precio_mayorista', null, 'float') : null;
+        $stock_minimo = isset($_POST['stock_minimo']) ? obtener_post('stock_minimo', 5, 'int') : null;
+        
+        // Actualizar precio público
+        if ($precio_publico !== null) {
+            // Verificar si existe el precio público
+            $existe = db_query_one(
+                'SELECT id FROM precios_producto WHERE producto_id = ? AND tipo_precio = ?',
+                [$id, 'publico']
+            );
+            
+            if ($existe) {
+                db_execute(
+                    'UPDATE precios_producto SET precio = ? WHERE producto_id = ? AND tipo_precio = ?',
+                    [$precio_publico, $id, 'publico']
+                );
+            } else {
+                db_execute(
+                    'INSERT INTO precios_producto (producto_id, tipo_precio, precio) VALUES (?, ?, ?)',
+                    [$id, 'publico', $precio_publico]
+                );
+            }
+        }
+        
+        // Actualizar precio mayorista
+        if ($precio_mayorista !== null && $precio_mayorista > 0) {
+            $existe = db_query_one(
+                'SELECT id FROM precios_producto WHERE producto_id = ? AND tipo_precio = ?',
+                [$id, 'mayorista']
+            );
+            
+            if ($existe) {
+                db_execute(
+                    'UPDATE precios_producto SET precio = ? WHERE producto_id = ? AND tipo_precio = ?',
+                    [$precio_mayorista, $id, 'mayorista']
+                );
+            } else {
+                db_execute(
+                    'INSERT INTO precios_producto (producto_id, tipo_precio, precio) VALUES (?, ?, ?)',
+                    [$id, 'mayorista', $precio_mayorista]
+                );
+            }
+        }
+        
+        // Actualizar stock mínimo
+        if ($stock_minimo !== null) {
+            db_execute('UPDATE inventario SET stock_minimo = ? WHERE producto_id = ?', [$stock_minimo, $id]);
+        }
+    }
     
-    // Responder con éxito
-    responder_json(
-        true,
-        $producto,
-        'Producto actualizado exitosamente'
-    );
+    responder_json(true, ['id' => $id], 'Producto actualizado exitosamente', 'PRODUCTO_ACTUALIZADO');
     
 } catch (Exception $e) {
-    responder_json(
-        false,
-        null,
-        'Error al actualizar producto: ' . $e->getMessage(),
-        'ERROR_ACTUALIZAR_PRODUCTO'
-    );
+    responder_json(false, null, 'Error al actualizar producto: ' . $e->getMessage(), 'ERROR_ACTUALIZACION');
 }

@@ -4,10 +4,8 @@
  * MÓDULO INVENTARIO - VER DETALLES PRODUCTO
  * ================================================
  * 
- * TODO FASE 5: Conectar con API
- * GET /api/inventario/ver.php?id={producto_id}
- * 
- * Respuesta: { producto, precios, stock, movimientos }
+ * Vista actualizada - FASE 5.1 COMPLETADA
+ * Conectada con API mediante api-helper.js e inventario.js
  */
 
 require_once '../../config.php';
@@ -64,6 +62,9 @@ include '../../includes/navbar.php';
                     </div>
                     <div class="col-md-4 text-md-end">
                         <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                            <button class="btn btn-success" onclick="Inventario.ver.descargarCodigoBarras()">
+                                <i class="bi bi-upc-scan"></i> <span class="d-none d-sm-inline">Código de Barras</span>
+                            </button>
                             <?php if (tiene_permiso('inventario', 'editar')): ?>
                             <a href="editar.php?id=<?php echo $producto_id; ?>" class="btn btn-warning">
                                 <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">Editar</span>
@@ -91,7 +92,7 @@ include '../../includes/navbar.php';
 
                 <div class="card mb-3 shadow-sm">
                     <div class="card-header bg-success text-white">
-                        <i class="bi bi-cash-coin"></i> Precios y Costos
+                        <i class="bi bi-cash-coin"></i> Precios
                     </div>
                     <div class="card-body" id="infoPrecio">
                         <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>
@@ -172,7 +173,7 @@ include '../../includes/navbar.php';
                     <div class="card-body">
                         <div class="row g-2">
                             <div class="col-md-4">
-                                <a href="transferencias.php?producto_id=<?php echo $producto_id; ?>" class="btn btn-warning w-100">
+                                <a href="transferir.php?producto_id=<?php echo $producto_id; ?>" class="btn btn-warning w-100">
                                     <i class="bi bi-arrow-left-right"></i> Transferir Stock
                                 </a>
                             </div>
@@ -236,160 +237,30 @@ table tbody td { padding: 12px; vertical-align: middle; }
 @media (max-width: 767.98px) { .btn { min-height: 44px; } }
 </style>
 
+<!-- Scripts específicos del módulo -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/api-helper.js"></script>
+<script src="<?php echo BASE_URL; ?>assets/js/inventario.js"></script>
+
+<!-- Canvas oculto para generar código de barras -->
+<canvas id="barcodeCanvas" style="display: none;"></canvas>
+
 <script>
+// Inicializar vista de detalle
 document.addEventListener('DOMContentLoaded', function() {
-    cargarDetallesProducto();
+    const productoId = <?php echo $producto_id; ?>;
+    Inventario.ver.init(productoId);
 });
 
-function cargarDetallesProducto() {
-    const productoId = <?php echo $producto_id; ?>;
-    
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/inventario/ver.php?id=' + productoId)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const { producto, precios, stock, movimientos } = data.data;
-                renderizarProducto(producto, precios, stock);
-                renderizarEstadisticas(producto, precios, stock);
-                renderizarMovimientos(movimientos);
-            } else {
-                mostrarError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarError('Error al cargar los datos');
-        });
-    */
-    
-    setTimeout(() => mostrarError('MODO DESARROLLO: Esperando API'), 1500);
+// Funciones de acciones
+function entradaStock() {
+    Inventario.ver.mostrarModalEntrada();
 }
 
-function renderizarProducto(producto, precios, stock) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-    
-    document.getElementById('breadcrumbCodigo').textContent = producto.codigo;
-    document.getElementById('productoNombre').textContent = producto.nombre;
-    document.getElementById('productoCodigo').innerHTML = '<i class="bi bi-upc-scan"></i> ' + producto.codigo;
-    document.getElementById('productoCategoria').innerHTML = '<i class="bi bi-folder"></i> ' + producto.categoria;
-    document.getElementById('productoEstado').innerHTML = producto.activo == 1 
-        ? '<span class="badge bg-success">Activo</span>' 
-        : '<span class="badge bg-secondary">Inactivo</span>';
-    
-    document.getElementById('infoProducto').innerHTML = `
-        <div><small class="text-muted d-block">Descripción</small><p class="mb-0">${producto.descripcion || 'Sin descripción'}</p></div>
-        <div><small class="text-muted d-block">Peso</small><strong>${producto.peso_gramos || 0} gramos</strong></div>
-        <div><small class="text-muted d-block">Estilo</small><strong>${producto.estilo || '-'}</strong></div>
-        <div><small class="text-muted d-block">Fecha de Creación</small><strong>${formatearFecha(producto.fecha_creacion)}</strong></div>
-    `;
-    
-    const margen = ((precios.precio_publico - precios.costo) / precios.costo * 100);
-    document.getElementById('infoPrecio').innerHTML = `
-        <div><small class="text-muted d-block">Precio Público</small><h4 class="mb-0 text-success">Q ${formatearMoneda(precios.precio_publico)}</h4></div>
-        <div><small class="text-muted d-block">Precio Mayorista</small><h4 class="mb-0 text-primary">Q ${formatearMoneda(precios.precio_mayorista)}</h4></div>
-        <div><small class="text-muted d-block">Margen</small><h4 class="mb-0 text-info">${margen.toFixed(2)}%</h4></div>
-    `;
-    
-    const stockTotal = parseInt(stock.los_arcos) + parseInt(stock.chinaca);
-    const porcentajeLosArcos = (stock.los_arcos / stockTotal * 100);
-    const porcentajeChinaca = (stock.chinaca / stockTotal * 100);
-    
-    document.getElementById('infoStock').innerHTML = `
-        <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span>Los Arcos</span>
-                <span class="badge" style="background-color: #1e3a8a;">${stock.los_arcos}</span>
-            </div>
-            <div class="progress" style="height: 20px;">
-                <div class="progress-bar" style="width: ${porcentajeLosArcos}%; background-color: #1e3a8a;">${porcentajeLosArcos.toFixed(0)}%</div>
-            </div>
-        </div>
-        <div>
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <span>Chinaca Central</span>
-                <span class="badge bg-warning">${stock.chinaca}</span>
-            </div>
-            <div class="progress" style="height: 20px;">
-                <div class="progress-bar bg-warning" style="width: ${porcentajeChinaca}%">${porcentajeChinaca.toFixed(0)}%</div>
-            </div>
-        </div>
-    `;
+function ajusteInventario() {
+    Inventario.ver.mostrarModalAjuste();
 }
-
-function renderizarEstadisticas(producto, precios, stock) {
-    const stockTotal = parseInt(stock.los_arcos) + parseInt(stock.chinaca);
-    const valorTotal = precios.precio_publico * stockTotal;
-    const gananciaUnidad = precios.precio_publico - precios.costo;
-    
-    document.getElementById('statStockTotal').textContent = stockTotal;
-    document.getElementById('statValorTotal').textContent = 'Q ' + formatearMoneda(valorTotal);
-    document.getElementById('statStockMin').textContent = producto.stock_minimo;
-    document.getElementById('statGanancia').textContent = 'Q ' + formatearMoneda(gananciaUnidad);
-}
-
-function renderizarMovimientos(movimientos) {
-    const tbody = document.getElementById('movimientosBody');
-    
-    if (movimientos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5"><i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3;"></i><p class="mt-3 text-muted">No hay movimientos registrados</p></td></tr>';
-        return;
-    }
-    
-    let html = '';
-    movimientos.forEach(mov => {
-        html += `
-            <tr>
-                <td><small>${formatearFecha(mov.fecha)}</small></td>
-                <td>${getBadgeTipo(mov.tipo)}</td>
-                <td class="fw-bold">${getCantidad(mov.tipo, mov.cantidad)}</td>
-                <td class="d-none d-md-table-cell">${mov.sucursal}</td>
-                <td class="d-none d-lg-table-cell">${mov.motivo}</td>
-                <td class="d-none d-xl-table-cell"><small class="text-muted">${mov.usuario}</small></td>
-            </tr>
-        `;
-    });
-    
-    tbody.innerHTML = html;
-    document.getElementById('movimientosFooter').style.display = 'block';
-    document.getElementById('contadorMovimientos').textContent = `Mostrando ${movimientos.length} movimientos`;
-    document.getElementById('tituloMovimientos').textContent = `Historial de Movimientos (${movimientos.length})`;
-}
-
-function mostrarError(mensaje) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMessage').textContent = mensaje;
-}
-
-function formatearMoneda(monto) {
-    return parseFloat(monto).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function formatearFecha(fecha) {
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function getBadgeTipo(tipo) {
-    const badges = {
-        'entrada': '<span class="badge bg-success">Entrada</span>',
-        'salida': '<span class="badge bg-danger">Salida</span>',
-        'transferencia': '<span class="badge bg-warning">Transferencia</span>',
-        'ajuste': '<span class="badge" style="background-color: #1e3a8a;">Ajuste</span>'
-    };
-    return badges[tipo] || '';
-}
-
-function getCantidad(tipo, cantidad) {
-    if (tipo === 'entrada') return '<span class="text-success">+' + cantidad + '</span>';
-    if (tipo === 'salida') return '<span class="text-danger">-' + cantidad + '</span>';
-    return cantidad;
-}
-
-function entradaStock() { alert('MODO DESARROLLO: Entrada de stock - Pendiente implementar'); }
-function ajusteInventario() { alert('MODO DESARROLLO: Ajuste de inventario - Pendiente implementar'); }
 </script>
 
 <?php include '../../includes/footer.php'; ?>
