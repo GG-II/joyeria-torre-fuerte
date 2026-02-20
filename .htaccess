@@ -1,0 +1,29 @@
+Options -MultiViews
+RewriteEngine On
+RewriteBase /joyeria-torre-fuerte/
+
+# ================================================
+# URLS SIN EXTENSIÓN .PHP
+# ================================================
+
+# Si el archivo existe tal cual, servirlo directamente (imágenes, css, js, etc.)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Si la URL no tiene extensión, intentar agregar .php
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [L]
+
+# ================================================
+# SEGURIDAD: Proteger archivos sensibles
+# ================================================
+
+# Bloquear acceso directo a includes y models
+RewriteRule ^(includes|models|database|logs)/ - [F,L]
+
+# Bloquear archivos .sql y .log
+<FilesMatch "\.(sql|log|md|sh|git)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>

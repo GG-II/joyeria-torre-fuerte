@@ -1,27 +1,26 @@
 <?php
-/**
- * ================================================
- * API: LOGOUT
- * ================================================
- * Endpoint para cerrar sesión y destruir token
- */
+// ================================================
+// CERRAR SESIÓN
+// ================================================
 
-require_once '../../config.php';
-require_once '../../includes/db.php';
-require_once '../../includes/auth.php';
-require_once '../../includes/api-helpers.php';
+require_once 'config.php';
+require_once 'includes/db.php';
+require_once 'includes/funciones.php';
+require_once 'includes/auth.php';
 
-header('Content-Type: application/json; charset=utf-8');
-
-// Verificar autenticación
-verificar_api_autenticacion();
+// Detectar si fue por timeout o logout manual
+$por_timeout = isset($_GET['timeout']) && $_GET['timeout'] == '1';
 
 // Cerrar sesión
 cerrar_sesion();
 
-// Responder
-responder_json(
-    true,
-    null,
-    'Sesión cerrada correctamente'
-);
+// Mensaje según el motivo
+if ($por_timeout) {
+    mensaje_advertencia('Tu sesión fue cerrada por inactividad. Por favor inicia sesión nuevamente.');
+} else {
+    mensaje_exito('Has cerrado sesión exitosamente.');
+}
+
+// Redirigir al login
+redirigir('login');
+?>

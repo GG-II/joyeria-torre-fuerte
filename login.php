@@ -313,19 +313,6 @@ $titulo_pagina = 'Iniciar Sesión';
                 </button>
             </form>
             
-            <!-- Credenciales de prueba -->
-            <div class="demo-credentials">
-                <strong><i class="bi bi-info-circle"></i> Credenciales de Prueba:</strong>
-                <div class="credential-item">
-                    <strong>Administrador:</strong> <code>admin@torrefuerte.com</code> / <code>123456</code>
-                </div>
-                <div class="credential-item">
-                    <strong>Vendedor:</strong> <code>vendedor1@torrefuerte.com</code> / <code>123456</code>
-                </div>
-                <div class="credential-item">
-                    <strong>Cajero:</strong> <code>cajera1@torrefuerte.com</code> / <code>123456</code>
-                </div>
-            </div>
         </div>
         
         <div class="login-footer">

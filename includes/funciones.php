@@ -380,10 +380,22 @@ function generar_numero_factura($serie = 'A') {
 /**
  * Redirecciona a otra página
  * 
- * @param string $url URL de destino
+ * Si la URL ya es absoluta (http/https), se usa tal cual.
+ * Si es relativa, se construye desde BASE_URL para evitar
+ * problemas de ruta cuando se llama desde subcarpetas.
+ * 
+ * @param string $url URL de destino (relativa o absoluta)
  */
 function redirigir($url) {
-    header("Location: $url");
+    if (strpos($url, 'http://') === 0 || strpos($url, 'https://') === 0) {
+        // URL absoluta: usar tal cual
+        header("Location: $url");
+    } else {
+        // URL relativa: construir desde BASE_URL
+        $base = defined('BASE_URL') ? rtrim(BASE_URL, '/') : '';
+        $ruta = '/' . ltrim($url, '/');
+        header("Location: $base$ruta");
+    }
     exit;
 }
 
