@@ -44,3 +44,5 @@ vendor/
 # Archivos de Windows
 ehthumbs.db
 Desktop.ini
+
+.vscode/sftp.json.vscode/
