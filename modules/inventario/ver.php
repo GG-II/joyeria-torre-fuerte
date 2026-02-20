@@ -1,11 +1,8 @@
 <?php
 /**
  * ================================================
- * MÓDULO INVENTARIO - VER DETALLES PRODUCTO
+ * MÓDULO INVENTARIO - VER PRODUCTO
  * ================================================
- * 
- * Vista actualizada - FASE 5.1 COMPLETADA
- * Conectada con API mediante api-helper.js e inventario.js
  */
 
 require_once '../../config.php';
@@ -15,252 +12,445 @@ require_once '../../includes/auth.php';
 
 requiere_autenticacion();
 
-$producto_id = $_GET['id'] ?? null;
+$producto_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
 if (!$producto_id) {
     header('Location: lista.php');
     exit;
 }
 
-$producto = null;
-$titulo_pagina = 'Detalles del Producto';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <div id="loadingState" class="text-center py-5">
-        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 text-muted">Cargando detalles del producto...</p>
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-eye"></i> Detalles del Producto</h2>
+            <p class="text-muted mb-0">Información completa y movimientos</p>
+        </div>
+        <div>
+            <?php if (tiene_permiso('inventario', 'editar')): ?>
+            <a href="editar.php?id=<?php echo $producto_id; ?>" class="btn btn-warning me-2">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            <?php endif; ?>
+            <a href="lista.php" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
     </div>
 
-    <div id="mainContent" style="display: none;">
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>dashboard.php"><i class="bi bi-house"></i> Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="lista.php"><i class="bi bi-box-seam"></i> Inventario</a></li>
-                <li class="breadcrumb-item active" id="breadcrumbCodigo">-</li>
-            </ol>
-        </nav>
+    <hr class="border-warning border-2 opacity-75 mb-4">
 
-        <div class="card mb-4 shadow-sm" style="border-left: 5px solid #d4af37;">
-            <div class="card-body">
-                <div class="row align-items-center g-3">
-                    <div class="col-md-8">
-                        <div class="d-flex align-items-center">
-                            <div class="stat-icon bg-primary text-white me-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; border-radius: 12px;">
-                                <i class="bi bi-gem" style="font-size: 28px;"></i>
-                            </div>
-                            <div>
-                                <h2 class="mb-2" id="productoNombre">-</h2>
-                                <div class="d-flex flex-wrap gap-3 text-muted">
-                                    <span id="productoCodigo"><i class="bi bi-upc-scan"></i> -</span>
-                                    <span id="productoCategoria"><i class="bi bi-folder"></i> -</span>
-                                    <span id="productoEstado"></span>
-                                </div>
+    <div class="row">
+        <!-- Información del Producto -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información del Producto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Código</label>
+                            <h5 id="codigo" class="text-primary">-</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Código de Barras</label>
+                            <div class="d-flex align-items-center">
+                                <code id="codigo_barras" class="fs-5">-</code>
+                                <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="btnVerBarcode">
+                                    <i class="bi bi-upc-scan"></i> Ver
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4 text-md-end">
-                        <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-                            <button class="btn btn-success" onclick="Inventario.ver.descargarCodigoBarras()">
-                                <i class="bi bi-upc-scan"></i> <span class="d-none d-sm-inline">Código de Barras</span>
-                            </button>
-                            <?php if (tiene_permiso('inventario', 'editar')): ?>
-                            <a href="editar.php?id=<?php echo $producto_id; ?>" class="btn btn-warning">
-                                <i class="bi bi-pencil"></i> <span class="d-none d-sm-inline">Editar</span>
-                            </a>
-                            <?php endif; ?>
-                            <a href="lista.php" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Volver</span>
-                            </a>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Nombre</label>
+                        <h4 id="nombre">-</h4>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Descripción</label>
+                        <p id="descripcion" class="text-secondary">-</p>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Categoría</label>
+                            <p id="categoria">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Proveedor</label>
+                            <p id="proveedor">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Precio Público</label>
+                            <h5 id="precio" class="text-success">-</h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Peso</label>
+                            <p id="peso">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Estilo</label>
+                            <p id="estilo">-</p>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Largo</label>
+                            <p id="largo">-</p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Estado</label>
+                            <p><span id="estado" class="badge">-</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Fecha Creación</label>
+                            <p id="fecha_creacion">-</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row g-3">
-            <div class="col-lg-4">
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                        <i class="bi bi-info-circle"></i> Información del Producto
-                    </div>
-                    <div class="card-body" id="infoProducto">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>
-                    </div>
+            <!-- Movimientos de Inventario -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Últimos Movimientos</h5>
                 </div>
-
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-header bg-success text-white">
-                        <i class="bi bi-cash-coin"></i> Precios
-                    </div>
-                    <div class="card-body" id="infoPrecio">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                        <i class="bi bi-building"></i> Stock por Sucursal
-                    </div>
-                    <div class="card-body" id="infoStock">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-8">
-                <div class="row g-3 mb-4" id="estadisticas">
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card azul">
-                            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
-                            <div class="stat-value" id="statStockTotal">0</div>
-                            <div class="stat-label">Stock Total</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card verde">
-                            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
-                            <div class="stat-value" id="statValorTotal">Q 0</div>
-                            <div class="stat-label">Valor Total</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card amarillo">
-                            <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                            <div class="stat-value" id="statStockMin">0</div>
-                            <div class="stat-label">Stock Mínimo</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="stat-card dorado">
-                            <div class="stat-icon"><i class="bi bi-graph-up"></i></div>
-                            <div class="stat-value" id="statGanancia">Q 0</div>
-                            <div class="stat-label">Ganancia/Unidad</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <i class="bi bi-clock-history"></i> <span id="tituloMovimientos">Historial de Movimientos</span>
-                    </div>
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead style="background-color: #1e3a8a; color: white;">
+                        <table class="table table-hover">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Tipo</th>
+                                    <th>Sucursal</th>
                                     <th>Cantidad</th>
-                                    <th class="d-none d-md-table-cell">Sucursal</th>
-                                    <th class="d-none d-lg-table-cell">Motivo</th>
-                                    <th class="d-none d-xl-table-cell">Usuario</th>
+                                    <th>Motivo</th>
+                                    <th>Usuario</th>
                                 </tr>
                             </thead>
-                            <tbody id="movimientosBody">
-                                <tr><td colspan="6" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></td></tr>
+                            <tbody id="tablaMovimientos">
                             </tbody>
                         </table>
                     </div>
-                    <div class="card-footer" id="movimientosFooter" style="display: none;">
-                        <small class="text-muted" id="contadorMovimientos">Mostrando 0 movimientos</small>
-                    </div>
                 </div>
+            </div>
+        </div>
 
-                <?php if (tiene_permiso('inventario', 'editar')): ?>
-                <div class="card mt-3 shadow-sm">
-                    <div class="card-header"><i class="bi bi-gear"></i> Acciones Disponibles</div>
-                    <div class="card-body">
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <a href="transferir.php?producto_id=<?php echo $producto_id; ?>" class="btn btn-warning w-100">
-                                    <i class="bi bi-arrow-left-right"></i> Transferir Stock
-                                </a>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-success w-100" onclick="entradaStock()">
-                                    <i class="bi bi-plus-circle"></i> Entrada de Stock
-                                </button>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-info w-100" onclick="ajusteInventario()">
-                                    <i class="bi bi-arrow-repeat"></i> Ajuste
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Stock por Sucursal -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-boxes"></i> Stock por Sucursal</h5>
                 </div>
-                <?php endif; ?>
+                <div class="card-body" id="stockPorSucursal">
+                    <p class="text-center text-muted">Cargando...</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="errorState" style="display: none;" class="text-center py-5">
-        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 48px;"></i>
-        <h4 class="mt-3">Error al cargar el producto</h4>
-        <p class="text-muted" id="errorMessage">No se pudo cargar la información.</p>
-        <a href="lista.php" class="btn btn-primary mt-3"><i class="bi bi-arrow-left"></i> Volver al listado</a>
+</div>
+
+<!-- Modal Código de Barras -->
+<div class="modal fade" id="modalBarcode" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-upc-scan"></i> Código de Barras</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <h5 id="modalProductoNombre" class="mb-2">-</h5>
+                <p id="modalCategoria" class="text-muted mb-4">-</p>
+                
+                <div class="bg-light p-4 rounded mb-3">
+                    <svg id="barcodeSvg"></svg>
+                </div>
+                
+                <h3 id="modalCodigoBarras" class="font-monospace text-primary">-</h3>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnCopiarCodigo">
+                    <i class="bi bi-clipboard"></i> Copiar Código
+                </button>
+                <button type="button" class="btn btn-success" id="btnDescargarBarcode">
+                    <i class="bi bi-download"></i> Descargar
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.stat-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease; border-left: 4px solid; height: 100%; }
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); }
-.stat-card.azul { border-left-color: #1e3a8a; }
-.stat-card.verde { border-left-color: #22c55e; }
-.stat-card.amarillo { border-left-color: #eab308; }
-.stat-card.dorado { border-left-color: #d4af37; }
-.stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
-.stat-card.azul .stat-icon { background: rgba(30, 58, 138, 0.1); color: #1e3a8a; }
-.stat-card.verde .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-.stat-card.amarillo .stat-icon { background: rgba(234, 179, 8, 0.1); color: #eab308; }
-.stat-card.dorado .stat-icon { background: rgba(212, 175, 55, 0.1); color: #d4af37; }
-.stat-value { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin: 8px 0; }
-.stat-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
-.card-body > div:not(:last-child) { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
-table thead th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; padding: 12px; }
-table tbody td { padding: 12px; vertical-align: middle; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    h2 { font-size: 1.5rem; }
-    .stat-card { padding: 12px; }
-    .stat-icon { width: 38px; height: 38px; font-size: 18px; margin-bottom: 8px; }
-    .stat-value { font-size: 1.25rem; }
-    .stat-label { font-size: 0.75rem; }
-    table { font-size: 0.85rem; }
-    table thead th, table tbody td { padding: 8px 6px; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn { min-height: 44px; } }
-</style>
+<?php require_once '../../includes/footer.php'; ?>
 
-<!-- Scripts específicos del módulo -->
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/api-helper.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/inventario.js"></script>
-
-<!-- Canvas oculto para generar código de barras -->
-<canvas id="barcodeCanvas" style="display: none;"></canvas>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
-// Inicializar vista de detalle
-document.addEventListener('DOMContentLoaded', function() {
-    const productoId = <?php echo $producto_id; ?>;
-    Inventario.ver.init(productoId);
+const productoId = <?php echo $producto_id; ?>;
+let producto = null;
+let modalBarcode = null;
+
+async function cargarProducto() {
+    try {
+        mostrarCargando();
+        
+        const res = await api.listarProductos();
+        const productos = res.data.productos || [];
+        producto = productos.find(p => p.id == productoId);
+        
+        if (!producto) {
+            ocultarCargando();
+            await mostrarError('Producto no encontrado');
+            window.location.href = 'lista.php';
+            return;
+        }
+        
+        mostrarDatos(producto);
+        await cargarStock();
+        await cargarMovimientos();
+        
+        ocultarCargando();
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error al cargar producto');
+    }
+}
+
+function mostrarDatos(prod) {
+    document.getElementById('codigo').textContent = prod.codigo || '-';
+    document.getElementById('codigo_barras').textContent = prod.codigo_barras || 'No generado';
+    document.getElementById('nombre').textContent = prod.nombre || '-';
+    document.getElementById('descripcion').textContent = prod.descripcion || 'Sin descripción';
+    document.getElementById('categoria').textContent = prod.categoria_nombre || '-';
+    document.getElementById('proveedor').textContent = prod.proveedor_nombre || 'Sin proveedor';
+    document.getElementById('precio').textContent = prod.precio_publico ? formatearMoneda(prod.precio_publico) : '-';
+    document.getElementById('peso').textContent = prod.peso_gramos ? prod.peso_gramos + 'g' : '-';
+    document.getElementById('estilo').textContent = prod.estilo || '-';
+    document.getElementById('largo').textContent = prod.largo_cm || '-';
+    
+    const badge = document.getElementById('estado');
+    badge.textContent = prod.activo == 1 ? 'Activo' : 'Inactivo';
+    badge.className = prod.activo == 1 ? 'badge bg-success' : 'badge bg-danger';
+    
+    document.getElementById('fecha_creacion').textContent = formatearFechaHora(prod.fecha_creacion);
+    
+    // Habilitar botón de barcode solo si existe
+    document.getElementById('btnVerBarcode').disabled = !prod.codigo_barras;
+}
+
+async function cargarStock() {
+    try {
+        const params = new URLSearchParams({ producto_id: productoId });
+        const res = await fetch(`/joyeria-torre-fuerte/api/inventario/listar.php?${params}`);
+        const data = await res.json();
+        
+        const container = document.getElementById('stockPorSucursal');
+        
+        if (!data.success || !data.data.inventario || data.data.inventario.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted">Sin stock registrado</p>';
+            return;
+        }
+        
+        let html = '';
+        data.data.inventario.forEach(inv => {
+            const cantidad = parseInt(inv.cantidad) || 0;
+            const minimo = inv.stock_minimo || 5;
+            
+            let badgeClass = 'bg-success';
+            let estado = 'Disponible';
+            
+            if (cantidad === 0) {
+                badgeClass = 'bg-danger';
+                estado = 'Agotado';
+            } else if (cantidad <= minimo) {
+                badgeClass = 'bg-warning text-dark';
+                estado = 'Stock Bajo';
+            }
+            
+            html += `
+                <div class="mb-3 pb-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">${escaparHTML(inv.sucursal_nombre)}</h6>
+                            <small class="text-muted">Mínimo: ${minimo}</small>
+                        </div>
+                        <div class="text-end">
+                            <h4 class="mb-0">${cantidad}</h4>
+                            <span class="badge ${badgeClass}">${estado}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error al cargar stock:', error);
+    }
+}
+
+async function cargarMovimientos() {
+    try {
+        const params = new URLSearchParams({ 
+            producto_id: productoId,
+            limit: 20
+        });
+        
+        const res = await fetch(`/joyeria-torre-fuerte/api/movimientos_inventario/listar.php?${params}`);
+        const data = await res.json();
+        
+        const tbody = document.getElementById('tablaMovimientos');
+        
+        if (!data.success || !data.data || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay movimientos registrados</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        data.data.forEach(mov => {
+            const tipoClass = {
+                'ingreso': 'text-success',
+                'entrada': 'text-success',
+                'salida': 'text-danger',
+                'ajuste': 'text-warning',
+                'transferencia': 'text-info',
+                'venta': 'text-primary'
+            };
+            
+            const clase = tipoClass[mov.tipo_movimiento] || '';
+            
+            html += `
+                <tr>
+                    <td><small>${formatearFechaHora(mov.fecha_hora)}</small></td>
+                    <td><span class="${clase}">${escaparHTML(mov.tipo_movimiento)}</span></td>
+                    <td>${escaparHTML(mov.sucursal_nombre || '-')}</td>
+                    <td><strong>${mov.cantidad}</strong></td>
+                    <td><small>${escaparHTML(mov.motivo || '-')}</small></td>
+                    <td><small>${escaparHTML(mov.usuario_nombre || '-')}</small></td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error al cargar movimientos:', error);
+    }
+}
+
+// Modal de código de barras
+document.getElementById('btnVerBarcode').addEventListener('click', function() {
+    if (!producto || !producto.codigo_barras) {
+        mostrarError('No hay código de barras generado');
+        return;
+    }
+    
+    document.getElementById('modalProductoNombre').textContent = producto.nombre;
+    document.getElementById('modalCategoria').textContent = producto.categoria_nombre;
+    document.getElementById('modalCodigoBarras').textContent = producto.codigo_barras;
+    
+    // Generar barcode SOLO con el código numérico
+    JsBarcode("#barcodeSvg", producto.codigo_barras, {
+        format: "EAN13",
+        width: 2,
+        height: 80,
+        displayValue: true,  // ← Mostrar el código de barras
+        fontSize: 14,
+        margin: 10
+    });
+    
+    // Agregar nombre del producto debajo en el HTML
+    const container = document.querySelector('#barcodeSvg').parentElement;
+    let nombreElement = container.querySelector('.producto-nombre');
+    if (!nombreElement) {
+        nombreElement = document.createElement('div');
+        nombreElement.className = 'producto-nombre text-center mt-2';
+        container.appendChild(nombreElement);
+    }
+    nombreElement.innerHTML = `<strong>${escaparHTML(producto.nombre)}</strong>`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalBarcode'));
+    modal.show();
+    modalBarcode = modal;
 });
 
-// Funciones de acciones
-function entradaStock() {
-    Inventario.ver.mostrarModalEntrada();
-}
+document.getElementById('btnCopiarCodigo').addEventListener('click', function() {
+    if (!producto || !producto.codigo_barras) return;
+    
+    navigator.clipboard.writeText(producto.codigo_barras).then(() => {
+        mostrarExito('Código copiado al portapapeles');
+    }).catch(() => {
+        mostrarError('No se pudo copiar');
+    });
+});
 
-function ajusteInventario() {
-    Inventario.ver.mostrarModalAjuste();
-}
+document.getElementById('btnDescargarBarcode').addEventListener('click', function() {
+    const svg = document.getElementById('barcodeSvg');
+    const nombreProducto = producto.nombre;
+    
+    // Crear canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Tamaño del canvas
+    canvas.width = 400;
+    canvas.height = 200;
+    
+    // Fondo blanco
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Convertir SVG a imagen
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    
+    img.onload = function() {
+        // Centrar el barcode
+        const x = (canvas.width - img.width) / 2;
+        const y = 20;
+        ctx.drawImage(img, x, y);
+        
+        // Agregar nombre del producto debajo
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(nombreProducto, canvas.width / 2, y + img.height + 30);
+        
+        // Descargar como JPG
+        canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `barcode_${producto.codigo}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            mostrarExito('Código de barras descargado');
+        }, 'image/jpeg', 1.0);
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+});
+
+document.addEventListener('DOMContentLoaded', cargarProducto);
 </script>
-
-<?php include '../../includes/footer.php'; ?>

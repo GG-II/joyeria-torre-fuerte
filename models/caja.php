@@ -41,23 +41,36 @@ class Caja {
                 return false;
             }
             
-            // Verificar que no haya una caja abierta para este usuario
-            $caja_abierta = db_query_one(
-                "SELECT id FROM cajas 
-                 WHERE usuario_id = ? AND estado = 'abierta'",
-                [$usuario_id]
-            );
-            
-            if ($caja_abierta) {
-                registrar_error("El usuario ya tiene una caja abierta (ID: {$caja_abierta['id']})");
-                return false;
-            }
-            
-            // Insertar nueva caja
-            $sql = "INSERT INTO cajas (
-                        usuario_id, sucursal_id, fecha_apertura, 
-                        monto_inicial, estado
-                    ) VALUES (?, ?, NOW(), ?, 'abierta')";
+            // Verificar que no haya una caja abierta para esta sucursal
+$caja_abierta = db_query_one(
+    "SELECT id, usuario_id FROM cajas 
+     WHERE sucursal_id = ? AND estado = 'abierta'",
+    [$sucursal_id]
+);
+
+if ($caja_abierta) {
+    // Si es el mismo usuario, no puede abrir otra
+    if ($caja_abierta['usuario_id'] == $usuario_id) {
+        registrar_error("El usuario ya tiene una caja abierta (ID: {$caja_abierta['id']})");
+        return false;
+    }
+    
+    // Si es otro usuario, verificar permisos
+    require_once __DIR__ . '/../includes/auth.php';
+    
+    if (!usuario_tiene_rol(['administrador', 'dueño'])) {
+        registrar_error("Ya hay una caja abierta en esta sucursal por otro usuario");
+        return false;
+    }
+    
+    // Admin/dueño puede continuar
+}
+
+// Insertar nueva caja
+$sql = "INSERT INTO cajas (
+            usuario_id, sucursal_id, fecha_apertura, 
+            monto_inicial, estado
+        ) VALUES (?, ?, NOW(), ?, 'abierta')";
             
             $caja_id = db_execute($sql, [
                 $usuario_id,
@@ -66,17 +79,6 @@ class Caja {
             ]);
             
             if ($caja_id) {
-                // Registrar movimiento inicial
-                $concepto = "Apertura de caja - Monto inicial: " . formato_dinero($monto_inicial);
-                
-                db_execute(
-                    "INSERT INTO movimientos_caja (
-                        caja_id, tipo_movimiento, categoria, concepto, 
-                        monto, usuario_id
-                    ) VALUES (?, 'otro_ingreso', 'ingreso', ?, ?, ?)",
-                    [$caja_id, $concepto, $monto_inicial, $usuario_id]
-                );
-                
                 // Auditoría
                 registrar_auditoria('INSERT', 'cajas', $caja_id, 
                     "Caja abierta - Sucursal: $sucursal_id - Monto inicial: " . formato_dinero($monto_inicial));
@@ -935,6 +937,23 @@ class Caja {
         
         return $caja ? $caja['id'] : false;
     }
+
+    /**
+ * Obtener ID de caja abierta de una sucursal específica
+ * 
+ * @param int $sucursal_id ID de la sucursal
+ * @return int|false ID de la caja o false si no hay caja abierta
+ */
+public static function obtenerCajaAbiertaPorSucursal($sucursal_id) {
+    $caja = db_query_one(
+        "SELECT id FROM cajas 
+         WHERE sucursal_id = ? AND estado = 'abierta' 
+         ORDER BY fecha_apertura DESC LIMIT 1",
+        [$sucursal_id]
+    );
+    
+    return $caja ? $caja['id'] : false;
+}
     
     /**
      * Obtener tipos de movimiento disponibles

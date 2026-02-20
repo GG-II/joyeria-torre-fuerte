@@ -633,12 +633,19 @@ class Cliente {
      * @return bool
      */
     public static function validarNitUnico($nit, $excluir_id = null) {
-        if (empty($nit)) {
-            return true; // NIT vacío es válido (no es obligatorio)
-        }
-        
-        if ($excluir_id) {
-            return !db_exists('clientes', 
+    if (empty($nit)) {
+        return true; // NIT vacío es válido (no es obligatorio)
+    }
+    
+    // Permitir múltiples C/F
+    $nit_upper = strtoupper(trim($nit));
+    if ($nit_upper === 'C/F' || $nit_upper === 'CF') {
+        return true; // C/F siempre es válido (puede haber múltiples)
+    }
+    
+    // Para otros NITs, validar que sea único
+    if ($excluir_id) {
+        return !db_exists('clientes', 
                 'nit = ? AND id != ? AND activo = 1', 
                 [$nit, $excluir_id]);
         }

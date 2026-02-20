@@ -3,23 +3,6 @@
  * ================================================
  * MÓDULO CLIENTES - LISTA
  * ================================================
- * 
- * Vista de listado de clientes con filtros y búsqueda.
- * 
- * TODO FASE 5: Conectar con API
- * GET /api/clientes/lista.php
- * 
- * Parámetros opcionales:
- * - buscar: texto de búsqueda
- * - tipo: publico|mayorista
- * - estado: 0|1
- * 
- * Respuesta esperada:
- * {
- *   "success": true,
- *   "data": [...],
- *   "total": 0
- * }
  */
 
 require_once '../../config.php';
@@ -27,437 +10,235 @@ require_once '../../includes/db.php';
 require_once '../../includes/funciones.php';
 require_once '../../includes/auth.php';
 
-// Verificar autenticación y permisos
 requiere_autenticacion();
 requiere_rol(['administrador', 'dueño', 'vendedor', 'cajero']);
 
-// Título de página
-$titulo_pagina = 'Clientes';
-
-// Incluir header
-include '../../includes/header.php';
-
-// Incluir navbar
-include '../../includes/navbar.php';
-
-// TODO FASE 5: Los datos se cargarán vía API
-$clientes = [];
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<!-- Contenido Principal -->
-<div class="container-fluid main-content">
-    <!-- Encabezado de Página -->
-    <div class="page-header mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <h1 class="mb-2">
-                    <i class="bi bi-people"></i>
-                    Clientes
-                </h1>
-                <p class="text-muted mb-0">Gestión de clientes y cuentas por cobrar</p>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <?php if (tiene_permiso('clientes', 'crear')): ?>
-                <a href="agregar.php" class="btn btn-primary btn-lg">
-                    <i class="bi bi-person-plus"></i>
-                    <span class="d-none d-sm-inline">Nuevo Cliente</span>
-                </a>
-                <?php endif; ?>
-            </div>
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-people"></i> Clientes</h2>
+            <p class="text-muted mb-0">Gestión de clientes y cuentas por cobrar</p>
         </div>
+        <?php if (in_array($_SESSION['usuario_rol'], ['administrador', 'dueño', 'vendedor'])): ?>
+        <a href="agregar.php" class="btn btn-warning btn-lg">
+            <i class="bi bi-plus-circle"></i> Nuevo Cliente
+        </a>
+        <?php endif; ?>
     </div>
 
-    <!-- Filtros y Búsqueda -->
-    <div class="card mb-4 shadow-sm">
+    <hr class="border-warning border-2 opacity-75 mb-4">
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-5">
                     <label class="form-label">Buscar Cliente</label>
                     <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" class="form-control" id="searchInput" 
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="inputBuscar" 
                                placeholder="Nombre, NIT, teléfono...">
                     </div>
                 </div>
+
                 <div class="col-md-3">
                     <label class="form-label">Tipo de Cliente</label>
-                    <select class="form-select" id="filterTipo">
+                    <select class="form-select" id="selectTipo">
                         <option value="">Todos</option>
                         <option value="publico">Público</option>
                         <option value="mayorista">Mayorista</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+
+                <div class="col-md-2">
                     <label class="form-label">Estado</label>
-                    <select class="form-select" id="filterEstado">
-                        <option value="">Todos</option>
-                        <option value="1" selected>Activos</option>
+                    <select class="form-select" id="selectEstado">
+                        <option value="" selected>Todos</option>
+                        <option value="1">Activos</option>
                         <option value="0">Inactivos</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label d-none d-md-block">&nbsp;</label>
-                    <button class="btn btn-secondary w-100" onclick="limpiarFiltros()">
-                        <i class="bi bi-x-circle"></i>
-                        <span class="d-md-none ms-2">Limpiar</span>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" id="btnLimpiar">
+                        <i class="bi bi-x-circle"></i> Limpiar
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tabla de Clientes -->
+    <!-- Tabla -->
     <div class="card shadow-sm">
-        <div class="card-header" style="background-color: #1e3a8a; color: white;">
-            <i class="bi bi-table"></i>
-            <span id="tituloTabla">Listado de Clientes</span>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-table"></i> Listado de Clientes</h5>
         </div>
-        <div class="card-body p-0">
-            <!-- Estado de carga -->
-            <div id="loadingTable" class="text-center py-5">
-                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-                <p class="mt-3 text-muted">Cargando clientes...</p>
-            </div>
-
-            <!-- Tabla -->
-            <div id="tableContainer" class="table-responsive" style="display: none;">
-                <table class="table table-hover mb-0" id="tablaClientes">
-                    <thead style="background-color: #1e3a8a; color: white;">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tablaClientes">
+                    <thead class="table-dark">
                         <tr>
-                            <th class="d-none d-xl-table-cell">#</th>
-                            <th>Cliente</th>
-                            <th class="d-none d-md-table-cell">NIT</th>
-                            <th class="d-none d-lg-table-cell">Contacto</th>
-                            <th class="d-none d-md-table-cell">Tipo</th>
-                            <th class="d-none d-xl-table-cell">Mercaderías</th>
-                            <th>Crédito</th>
-                            <th class="d-none d-sm-table-cell">Estado</th>
-                            <th class="text-center">Acciones</th>
+                            <th width="20%">Nombre</th>
+                            <th width="12%">NIT</th>
+                            <th width="10%">Teléfono</th>
+                            <th width="15%">Email</th>
+                            <th width="8%">Tipo</th>
+                            <th width="10%">Mercadería</th>
+                            <th width="10%">Límite Crédito</th>
+                            <th width="8%">Estado</th>
+                            <th width="7%" class="text-center">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="clientesBody">
-                        <!-- Se llenará dinámicamente -->
+                    <tbody id="tablaClientesBody">
                     </tbody>
                 </table>
             </div>
-
-            <!-- Sin resultados -->
-            <div id="noResults" class="text-center py-5" style="display: none;">
-                <i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-                <p class="mt-3 text-muted">No se encontraron clientes</p>
-            </div>
-        </div>
-        <div class="card-footer" id="tableFooter" style="display: none;">
-            <div class="row align-items-center g-2">
-                <div class="col-md-6">
-                    <small class="text-muted" id="contadorClientes">
-                        Mostrando 0 clientes
-                    </small>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <!-- Paginación aquí cuando se conecte -->
-                </div>
-            </div>
         </div>
     </div>
+
 </div>
 
-<style>
-/* ============================================
-   ESTILOS ESPECÍFICOS LISTA CLIENTES
-   ============================================ */
+<?php require_once '../../includes/footer.php'; ?>
 
-/* Contenedor principal */
-.main-content {
-    padding: 20px;
-    min-height: calc(100vh - 120px);
-}
-
-/* Page header */
-.page-header h1 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: #1a1a1a;
-}
-
-/* Cards */
-.shadow-sm {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
-}
-
-/* Avatar en tabla */
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-/* Tabla */
-table thead th {
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    padding: 12px;
-}
-
-table tbody td {
-    padding: 12px;
-    vertical-align: middle;
-}
-
-/* Badges */
-.badge {
-    padding: 0.35em 0.65em;
-    font-size: 0.85em;
-}
-
-.bg-dorado {
-    background-color: #d4af37 !important;
-}
-
-/* Botones de acción */
-.btn-group .btn {
-    margin: 0;
-}
-
-/* ============================================
-   RESPONSIVE - MOBILE FIRST
-   ============================================ */
-
-/* Móvil (< 576px) */
-@media (max-width: 575.98px) {
-    .main-content {
-        padding: 15px 10px;
-    }
-    
-    .page-header h1 {
-        font-size: 1.5rem;
-    }
-    
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 12px;
-    }
-    
-    /* Tabla más compacta */
-    table {
-        font-size: 0.85rem;
-    }
-    
-    table thead th,
-    table tbody td {
-        padding: 8px 6px;
-    }
-    
-    /* Botones solo iconos */
-    .btn-group .btn {
-        padding: 0.25rem 0.5rem;
-    }
-    
-    /* Card body sin padding */
-    .card-body {
-        padding: 15px;
-    }
-}
-
-/* Tablet (576px - 767.98px) */
-@media (min-width: 576px) and (max-width: 767.98px) {
-    .main-content {
-        padding: 18px 15px;
-    }
-}
-
-/* Desktop (992px+) */
-@media (min-width: 992px) {
-    .main-content {
-        padding: 25px 30px;
-    }
-}
-
-/* Touch targets */
-@media (max-width: 767.98px) {
-    .btn,
-    .form-control,
-    .form-select {
-        min-height: 44px;
-    }
-}
-
-/* Card header */
-.card-header {
-    font-weight: 600;
-    padding: 12px 20px;
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-#clientesBody tr {
-    animation: fadeIn 0.3s ease;
-}
-</style>
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
-/**
- * ================================================
- * JAVASCRIPT - LISTA DE CLIENTES
- * ================================================
- */
+let clientesData = [];
+let clientesFiltrados = [];
 
-// Cargar datos al iniciar
-document.addEventListener('DOMContentLoaded', function() {
-    cargarClientes();
+async function cargarClientes() {
+    try {
+        mostrarCargando();
+        
+        const estado = document.getElementById('selectEstado').value;
+        const tipo = document.getElementById('selectTipo').value;
+        const filtros = {};
+        
+        if (estado !== '') filtros.activo = estado;
+        if (tipo) filtros.tipo_cliente = tipo;
+        
+        const resultado = await api.listarClientes(filtros);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            // LA API DEVUELVE: { data: { clientes: [...], total, pagina } }
+            const datos = resultado.data.clientes || resultado.data || [];
+            clientesData = Array.isArray(datos) ? datos : [];
+            clientesFiltrados = [...clientesData];
+            
+            aplicarFiltros();
+        } else {
+            clientesData = [];
+            clientesFiltrados = [];
+            mostrarMensajeVacio('tablaClientes', 'No hay clientes para mostrar', 9);
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error: ' + error.message);
+        mostrarMensajeVacio('tablaClientes', 'Error al cargar datos', 9);
+    }
+}
+function aplicarFiltros() {
+    const buscar = document.getElementById('inputBuscar').value.toLowerCase().trim();
     
-    // Event listeners para filtros
-    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
-    document.getElementById('filterTipo').addEventListener('change', aplicarFiltros);
-    document.getElementById('filterEstado').addEventListener('change', aplicarFiltros);
-});
-
-/**
- * Cargar clientes desde API
- * TODO FASE 5: Conectar con API real
- */
-function cargarClientes() {
-    // TODO FASE 5: Descomentar y conectar
-    /*
-    const params = new URLSearchParams({
-        buscar: document.getElementById('searchInput').value,
-        tipo: document.getElementById('filterTipo').value,
-        estado: document.getElementById('filterEstado').value
+    clientesFiltrados = clientesData.filter(cliente => {
+        if (buscar) {
+            const nombre = (cliente.nombre || '').toLowerCase();
+            const nit = (cliente.nit || '').toLowerCase();
+            const telefono = (cliente.telefono || '').toLowerCase();
+            
+            if (!nombre.includes(buscar) && !nit.includes(buscar) && !telefono.includes(buscar)) {
+                return false;
+            }
+        }
+        
+        return true;
     });
     
-    fetch(`<?php echo BASE_URL; ?>api/clientes/lista.php?${params}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderizarClientes(data.data);
-            } else {
-                mostrarError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarError('Error al cargar los clientes');
-        });
-    */
-    
-    // Simular carga
-    setTimeout(() => {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
-        document.getElementById('noResults').innerHTML = `
-            <i class="bi bi-database" style="font-size: 48px; opacity: 0.3;"></i>
-            <p class="mt-3 text-muted">MODO DESARROLLO: Esperando conexión con API</p>
-        `;
-    }, 1500);
+    mostrarClientes();
 }
 
-/**
- * Renderizar clientes en la tabla
- */
-function renderizarClientes(clientes) {
-    const tbody = document.getElementById('clientesBody');
+function mostrarClientes() {
+    const tbody = document.getElementById('tablaClientesBody');
     
-    if (clientes.length === 0) {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
+    if (clientesFiltrados.length === 0) {
+        mostrarMensajeVacio('tablaClientes', 'No hay clientes para mostrar', 9);
         return;
     }
     
+    const rolUsuario = '<?php echo $_SESSION["usuario_rol"] ?? ""; ?>';
+    const puedeEditar = ['administrador', 'dueño', 'vendedor'].includes(rolUsuario);
+    
     let html = '';
     
-    clientes.forEach(cliente => {
-        const inicial = cliente.nombre.charAt(0).toUpperCase();
-        const creditoDisponible = parseFloat(cliente.limite_credito) - parseFloat(cliente.saldo_creditos || 0);
+    clientesFiltrados.forEach(cliente => {
+        const badgeEstado = cliente.activo == 1 
+            ? '<span class="badge bg-success">Activo</span>'
+            : '<span class="badge bg-secondary">Inactivo</span>';
+        
+        const badgeTipo = cliente.tipo_cliente === 'mayorista'
+            ? '<span class="badge bg-warning text-dark">Mayorista</span>'
+            : '<span class="badge bg-info">Público</span>';
+        
+        const badgeMercaderia = obtenerBadgeMercaderia(cliente.tipo_mercaderias);
+        
+        const btnVer = `
+            <a href="ver.php?id=${cliente.id}" 
+               class="btn btn-sm btn-outline-info" 
+               title="Ver">
+                <i class="bi bi-eye"></i>
+            </a>
+        `;
+        
+        let botonesAdmin = '';
+        if (puedeEditar) {
+            const btnEditar = `
+                <a href="editar.php?id=${cliente.id}" 
+                   class="btn btn-sm btn-outline-warning" 
+                   title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </a>
+            `;
+            
+            const btnEstado = cliente.activo == 1
+                ? `<button class="btn btn-sm btn-outline-danger" 
+                           onclick="cambiarEstado(${cliente.id}, 0)" 
+                           title="Desactivar">
+                       <i class="bi bi-x-circle"></i>
+                   </button>`
+                : `<button class="btn btn-sm btn-outline-success" 
+                           onclick="cambiarEstado(${cliente.id}, 1)" 
+                           title="Activar">
+                       <i class="bi bi-check-circle"></i>
+                   </button>`;
+            
+            botonesAdmin = btnEditar + ' ' + btnEstado;
+        }
         
         html += `
             <tr>
-                <td class="fw-bold d-none d-xl-table-cell">${cliente.id}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="user-avatar bg-primary text-white me-2">
-                            ${inicial}
-                        </div>
-                        <div>
-                            <div class="fw-bold">${cliente.nombre}</div>
-                            <small class="text-muted">
-                                <i class="bi bi-calendar3"></i>
-                                Desde ${formatearFecha(cliente.fecha_creacion)}
-                            </small>
-                        </div>
-                    </div>
-                </td>
-                <td class="d-none d-md-table-cell">${cliente.nit}</td>
-                <td class="d-none d-lg-table-cell">
-                    <div>
-                        <i class="bi bi-telephone text-primary"></i>
-                        ${cliente.telefono}
-                    </div>
-                    ${cliente.email ? `
-                        <div>
-                            <i class="bi bi-envelope text-muted"></i>
-                            <small>${cliente.email}</small>
-                        </div>
-                    ` : ''}
-                </td>
-                <td class="d-none d-md-table-cell">
-                    ${getBadgeTipo(cliente.tipo_cliente)}
-                </td>
-                <td class="d-none d-xl-table-cell">
-                    ${getIconoMercaderias(cliente.tipo_mercaderias)}
-                </td>
-                <td>
-                    ${cliente.saldo_creditos > 0 ? `
-                        <span class="text-danger fw-bold">
-                            Q ${formatearMoneda(cliente.saldo_creditos)}
-                        </span>
-                        <br>
-                        <small class="text-muted">
-                            Límite: Q ${formatearMoneda(cliente.limite_credito)}
-                        </small>
-                    ` : `
-                        <span class="text-success">
-                            <i class="bi bi-check-circle"></i> Sin deuda
-                        </span>
-                    `}
-                </td>
-                <td class="d-none d-sm-table-cell">
-                    ${getBadgeEstado(cliente.activo)}
-                </td>
+                <td><strong>${escaparHTML(cliente.nombre || '')}</strong></td>
+                <td>${escaparHTML(cliente.nit || 'C/F')}</td>
+                <td>${escaparHTML(cliente.telefono || '-')}</td>
+                <td><small>${escaparHTML(cliente.email || '-')}</small></td>
+                <td>${badgeTipo}</td>
+                <td>${badgeMercaderia}</td>
+                <td>${cliente.limite_credito ? formatearMoneda(cliente.limite_credito) : '-'}</td>
+                <td>${badgeEstado}</td>
                 <td class="text-center">
-                    <div class="btn-group" role="group">
-                        <a href="ver.php?id=${cliente.id}" 
-                           class="btn btn-sm btn-info" 
-                           title="Ver detalles">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <?php if (tiene_permiso('clientes', 'editar')): ?>
-                        <a href="editar.php?id=${cliente.id}" 
-                           class="btn btn-sm btn-warning"
-                           title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <?php endif; ?>
-                        <?php if (tiene_permiso('clientes', 'eliminar')): ?>
-                        <button class="btn btn-sm btn-danger" 
-                                onclick="eliminarCliente(${cliente.id})"
-                                title="Eliminar">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                        <?php endif; ?>
+                    <div class="btn-group btn-group-sm" role="group">
+                        ${btnVer}
+                        ${botonesAdmin}
                     </div>
                 </td>
             </tr>
@@ -465,126 +246,60 @@ function renderizarClientes(clientes) {
     });
     
     tbody.innerHTML = html;
-    
-    // Mostrar tabla y footer
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('tableContainer').style.display = 'block';
-    document.getElementById('tableFooter').style.display = 'block';
-    
-    // Actualizar contador
-    document.getElementById('contadorClientes').textContent = `Mostrando ${clientes.length} clientes`;
-    document.getElementById('tituloTabla').textContent = `Listado de Clientes (${clientes.length})`;
 }
 
-/**
- * Aplicar filtros
- */
-function aplicarFiltros() {
-    // TODO FASE 5: Llamar a cargarClientes() con los nuevos filtros
-    cargarClientes();
-}
-
-/**
- * Limpiar filtros
- */
-function limpiarFiltros() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('filterTipo').value = '';
-    document.getElementById('filterEstado').value = '';
-    cargarClientes();
-}
-
-/**
- * Eliminar cliente
- * TODO FASE 5: Conectar con API
- */
-function eliminarCliente(clienteId) {
-    if (!confirm('¿Está seguro de eliminar este cliente?\n\nEsta acción no se puede deshacer.')) {
-        return;
-    }
+function obtenerBadgeMercaderia(tipo) {
+    const badges = {
+        'oro': '<span class="badge bg-warning text-dark">Oro</span>',
+        'plata': '<span class="badge bg-secondary">Plata</span>',
+        'ambas': '<span class="badge bg-primary">Ambas</span>'
+    };
     
-    // TODO FASE 5: Descomentar y conectar
-    /*
-    fetch(`<?php echo BASE_URL; ?>api/clientes/eliminar.php`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ id: clienteId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            mostrarAlerta('Cliente eliminado exitosamente', 'success');
+    return badges[tipo] || '<span class="badge bg-light text-dark">-</span>';
+}
+
+async function cambiarEstado(id, nuevoEstado) {
+    const accion = nuevoEstado == 1 ? 'activar' : 'desactivar';
+    const confirmacion = await confirmarAccion(`¿Estás seguro de ${accion} este cliente?`);
+    
+    if (!confirmacion) return;
+    
+    try {
+        mostrarCargando();
+        
+        const resultado = await api.cambiarEstadoCliente(id, nuevoEstado);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            mostrarExito(`Cliente ${accion === 'activar' ? 'activado' : 'desactivado'} correctamente`);
             cargarClientes();
         } else {
-            mostrarAlerta(data.message, 'error');
+            mostrarError(resultado.message || 'Error al cambiar estado');
         }
-    })
-    .catch(error => {
+        
+    } catch (error) {
+        ocultarCargando();
         console.error('Error:', error);
-        mostrarAlerta('Error al eliminar el cliente', 'error');
-    });
-    */
+        mostrarError('Error: ' + error.message);
+    }
+}
+
+function limpiarFiltros() {
+    document.getElementById('inputBuscar').value = '';
+    document.getElementById('selectEstado').value = '';
+    document.getElementById('selectTipo').value = '';
+    cargarClientes();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarClientes();
     
-    alert('MODO DESARROLLO: Eliminar cliente #' + clienteId + '\nEsperando API');
-}
+    document.getElementById('inputBuscar').addEventListener('input', aplicarFiltros);
+    document.getElementById('selectEstado').addEventListener('change', cargarClientes);
+    document.getElementById('selectTipo').addEventListener('change', cargarClientes);
+    document.getElementById('btnLimpiar').addEventListener('click', limpiarFiltros);
+});
 
-/**
- * Utilidades
- */
-function formatearMoneda(monto) {
-    return parseFloat(monto).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function formatearFecha(fecha) {
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-GT', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
-}
-
-function getBadgeTipo(tipo) {
-    const badges = {
-        'publico': '<span class="badge" style="background-color: #1e3a8a;">Público</span>',
-        'mayorista': '<span class="badge bg-dorado">Mayorista</span>'
-    };
-    return badges[tipo] || '';
-}
-
-function getIconoMercaderias(tipo) {
-    const iconos = {
-        'oro': '<span title="Oro">🟡 Oro</span>',
-        'plata': '<span title="Plata">⚪ Plata</span>',
-        'ambas': '<span title="Ambas">🟡⚪ Ambas</span>'
-    };
-    return iconos[tipo] || tipo;
-}
-
-function getBadgeEstado(activo) {
-    return activo == 1 
-        ? '<span class="badge bg-success">Activo</span>' 
-        : '<span class="badge bg-secondary">Inactivo</span>';
-}
-
-function mostrarError(mensaje) {
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('noResults').style.display = 'block';
-    document.getElementById('noResults').innerHTML = `
-        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 48px;"></i>
-        <p class="mt-3 text-danger">${mensaje}</p>
-    `;
-}
-
-function mostrarAlerta(mensaje, tipo) {
-    // TODO: Implementar sistema de notificaciones
-    alert(mensaje);
-}
+console.log('✅ Vista de Clientes cargada correctamente');
 </script>
-
-<?php
-// Incluir footer
-include '../../includes/footer.php';
-?>

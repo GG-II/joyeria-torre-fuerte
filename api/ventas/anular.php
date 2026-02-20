@@ -44,6 +44,17 @@ validar_metodo_http('POST');
 verificar_api_permiso('ventas', 'eliminar');
 
 try {
+    // ⭐⭐⭐ CÓDIGO AGREGADO: Leer JSON del body ⭐⭐⭐
+    $json_input = file_get_contents('php://input');
+    if ($json_input) {
+        $datos_json = json_decode($json_input, true);
+        if ($datos_json && is_array($datos_json)) {
+            // Fusionar con $_POST para que obtener_post() funcione
+            $_POST = array_merge($_POST, $datos_json);
+        }
+    }
+    // ⭐⭐⭐ FIN DEL CÓDIGO AGREGADO ⭐⭐⭐
+    
     // Validar ID requerido
     validar_campos_requeridos(['id'], 'POST');
     

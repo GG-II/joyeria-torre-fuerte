@@ -38,6 +38,7 @@ try {
     $nombre = obtener_post('nombre', null, 'string');
     $descripcion = obtener_post('descripcion', '', 'string');
     $categoria_id = obtener_post('categoria_id', null, 'int');
+    $proveedor_id = obtener_post('proveedor_id', null, 'int'); 
     $peso_gramos = obtener_post('peso_gramos', null, 'float');
     $largo_cm = obtener_post('largo_cm', null, 'float');
     $estilo = obtener_post('estilo', null, 'string');
@@ -85,7 +86,7 @@ try {
             $nombre,
             $descripcion,
             $categoria_id,
-            null, // proveedor_id
+            $proveedor_id, // ← CAMBIAR: era null
             $peso_gramos,
             $largo_cm,
             $estilo,

@@ -97,6 +97,32 @@ try {
         throw new Exception('No se pudo entregar el trabajo');
     }
     
+    // ========================================
+    // REGISTRAR INGRESO EN CAJA
+    // ========================================
+    // Solo cobrar el saldo que quedaba pendiente al momento de entregar
+    if ($saldo_pendiente > 0) {
+        require_once '../../models/caja.php';
+        
+        $usuario_actual = usuario_actual_id();
+        
+        // Usar la caja abierta del usuario actual
+        $caja_id = Caja::obtenerIdCajaAbierta($usuario_actual);
+        
+        if ($caja_id) {
+            Caja::registrarMovimiento([
+                'caja_id' => $caja_id,
+                'tipo_movimiento' => 'ingreso_reparacion',
+                'categoria' => 'ingreso',
+                'concepto' => "Trabajo {$trabajo['codigo']} - {$trabajo['cliente_nombre']}",
+                'monto' => $saldo_pendiente,
+                'usuario_id' => $usuario_actual,
+                'referencia_tipo' => 'trabajo_taller',
+                'referencia_id' => $id
+            ]);
+        }
+    }
+    
     // Obtener trabajo actualizado
     $trabajo_actualizado = TrabajoTaller::obtenerPorId($id);
     

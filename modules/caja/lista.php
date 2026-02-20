@@ -1,15 +1,8 @@
 <?php
 /**
  * ================================================
- * MÓDULO CAJA - LISTA DE CAJAS
+ * MÓDULO CAJA - CONTROL DE CAJA
  * ================================================
- * 
- * TODO FASE 5: Conectar con APIs
- * GET /api/caja/actual.php - Verificar si hay caja abierta
- * GET /api/caja/lista.php - Cargar historial de cajas
- * 
- * Parámetros: fecha_desde, fecha_hasta, sucursal_id, usuario_id
- * Respuesta: { success, data: [...cajas], resumen: {...stats}, caja_actual: {...} }
  */
 
 require_once '../../config.php';
@@ -18,109 +11,130 @@ require_once '../../includes/funciones.php';
 require_once '../../includes/auth.php';
 
 requiere_autenticacion();
-requiere_rol(['administrador', 'dueño', 'cajero']);
 
-$usuario_actual = [
-    'id' => $_SESSION['usuario_id'],
-    'nombre' => $_SESSION['usuario_nombre'],
-    'sucursal_id' => $_SESSION['usuario_sucursal_id'],
-    'sucursal_nombre' => $_SESSION['usuario_sucursal_nombre']
-];
-
-$titulo_pagina = 'Control de Caja';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <div class="page-header mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <h1 class="mb-2"><i class="bi bi-cash-stack"></i> Control de Caja</h1>
-                <p class="text-muted mb-0">Gestión de apertura, cierre y movimientos de caja</p>
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-cash-coin"></i> Control de Caja</h2>
+            <p class="text-muted mb-0">Gestión de apertura, cierre y movimientos de caja</p>
+        </div>
+        <div>
+            <a href="registrar_movimiento.php" class="btn btn-info me-2">
+                <i class="bi bi-plus-circle"></i> Registrar Movimiento
+            </a>
+            <button type="button" class="btn btn-success" id="btnAbrirCaja" data-bs-toggle="modal" data-bs-target="#modalAbrirCaja">
+                <i class="bi bi-box-arrow-in-down"></i> Abrir Caja
+            </button>
+        </div>
+    </div>
+
+    <hr class="border-warning border-2 opacity-75 mb-4">
+
+    <!-- Cajas Abiertas -->
+    <div id="cajasAbiertasContainer"></div>
+
+    <!-- Cards Estadísticas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-success border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Cajas Cuadradas</p>
+                            <h3 id="totalCuadradas" class="mb-0">0</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-check-circle fs-2 text-success"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6 text-md-end">
-                <div class="d-flex flex-wrap gap-2 justify-content-md-end" id="botonesAccion">
-                    <a href="abrir.php" class="btn btn-success btn-lg" id="btnAbrir">
-                        <i class="bi bi-box-arrow-in-down"></i> <span class="d-none d-sm-inline">Abrir Caja</span>
-                    </a>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-start border-danger border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Con Faltante</p>
+                            <h3 id="totalFaltante" class="mb-0">0</h3>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-exclamation-triangle fs-2 text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Con Sobrante</p>
+                            <h3 id="totalSobrante" class="mb-0">0</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-plus-circle fs-2 text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-start border-primary border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1">Total Recaudado</p>
+                            <h3 id="totalRecaudado" class="mb-0">Q 0</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-cash-stack fs-2 text-primary"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="alertCajaActual" class="alert alert-success border-start border-success border-5 shadow-sm" style="display: none;">
-        <div class="row align-items-center g-3">
-            <div class="col-md-8">
-                <h4 class="alert-heading mb-2"><i class="bi bi-check-circle"></i> Caja Abierta - Turno Actual</h4>
-                <p class="mb-0" id="infoCajaActual"></p>
-            </div>
-            <div class="col-md-4 text-md-end">
-                <h3 class="mb-0 text-success" id="efectivoActual">Q 0.00</h3>
-                <small class="text-muted" id="detalleEfectivo"></small>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-3 mb-4" id="estadisticas">
-        <div class="col-6 col-md-3">
-            <div class="stat-card verde">
-                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-value" id="statCuadradas">0</div>
-                <div class="stat-label">Cajas Cuadradas</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card rojo">
-                <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                <div class="stat-value" id="statFaltante">0</div>
-                <div class="stat-label">Con Faltante</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card amarillo">
-                <div class="stat-icon"><i class="bi bi-plus-circle"></i></div>
-                <div class="stat-value" id="statSobrante">0</div>
-                <div class="stat-label">Con Sobrante</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card dorado">
-                <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
-                <div class="stat-value" id="statTotal">Q 0</div>
-                <div class="stat-label">Total Recaudado</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm">
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Fecha Desde</label>
                     <input type="date" class="form-control" id="fechaDesde">
                 </div>
+
                 <div class="col-md-3">
                     <label class="form-label">Fecha Hasta</label>
                     <input type="date" class="form-control" id="fechaHasta">
                 </div>
+
                 <div class="col-md-2">
                     <label class="form-label">Sucursal</label>
-                    <select class="form-select" id="filterSucursal">
+                    <select class="form-select" id="filtroSucursal">
                         <option value="">Todas</option>
-                        <option value="1">Los Arcos</option>
-                        <option value="2">Chinaca Central</option>
                     </select>
                 </div>
+
                 <div class="col-md-2">
                     <label class="form-label">Usuario</label>
-                    <select class="form-select" id="filterUsuario">
+                    <select class="form-select" id="filtroUsuario">
                         <option value="">Todos</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label d-none d-md-block">&nbsp;</label>
-                    <button class="btn btn-secondary w-100" onclick="aplicarFiltros()">
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
                         <i class="bi bi-funnel"></i> Filtrar
                     </button>
                 </div>
@@ -128,288 +142,655 @@ include '../../includes/navbar.php';
         </div>
     </div>
 
+    <!-- Tabla Historial -->
     <div class="card shadow-sm">
-        <div class="card-header" style="background-color: #1e3a8a; color: white;">
-            <i class="bi bi-table"></i> <span id="tituloTabla">Historial de Cajas</span>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historial de Cajas</h5>
         </div>
-        
-        <div id="loadingTable" class="text-center py-5">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-            <p class="mt-3 text-muted">Cargando historial...</p>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Sucursal</th>
+                            <th>Usuario</th>
+                            <th>Apertura</th>
+                            <th>Cierre</th>
+                            <th>Monto Inicial</th>
+                            <th>Esperado</th>
+                            <th>Real</th>
+                            <th>Diferencia</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCajas">
+                        <tr>
+                            <td colspan="10" class="text-center text-muted py-4">
+                                <div class="spinner-border text-primary"></div>
+                                <p class="mt-2">Cargando historial...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
+    </div>
 
-        <div id="tableContainer" class="table-responsive" style="display: none;">
-            <table class="table table-hover mb-0">
-                <thead style="background-color: #1e3a8a; color: white;">
-                    <tr>
-                        <th>#</th>
-                        <th>Apertura</th>
-                        <th class="d-none d-md-table-cell">Cierre</th>
-                        <th>Usuario</th>
-                        <th class="d-none d-lg-table-cell">Sucursal</th>
-                        <th class="d-none d-xl-table-cell">Inicial</th>
-                        <th class="d-none d-xl-table-cell">Esperado</th>
-                        <th>Real</th>
-                        <th>Diferencia</th>
-                        <th class="d-none d-lg-table-cell">Ventas</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="cajasBody"></tbody>
-                <tfoot class="table-light" id="tableFoot" style="display: none;">
-                    <tr>
-                        <td colspan="5" class="text-end fw-bold">TOTALES:</td>
-                        <td class="fw-bold d-none d-xl-table-cell" id="totalInicial">Q 0.00</td>
-                        <td class="fw-bold d-none d-xl-table-cell" id="totalEsperado">Q 0.00</td>
-                        <td class="fw-bold text-success" id="totalReal">Q 0.00</td>
-                        <td colspan="3"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+</div>
 
-        <div id="noResults" class="text-center py-5" style="display: none;">
-            <i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-            <p class="mt-3 text-muted">No se encontraron cajas</p>
-        </div>
+<!-- Modal Abrir Caja -->
+<div class="modal fade" id="modalAbrirCaja" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="bi bi-box-arrow-in-down"></i> Abrir Caja</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formAbrirCaja">
+                    <div class="mb-3">
+                        <label for="sucursalAbrir" class="form-label">
+                            Sucursal <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="sucursalAbrir" required>
+                            <option value="">Seleccione...</option>
+                        </select>
+                    </div>
 
-        <div class="card-footer" id="tableFooter" style="display: none;">
-            <small class="text-muted" id="contadorCajas">Mostrando 0 cajas</small>
+                    <div class="mb-3">
+                        <label for="montoInicial" class="form-label">
+                            Monto Inicial (Q) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control form-control-lg" id="montoInicial" 
+                               step="0.01" min="0" required placeholder="Ej: 500.00">
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <small>Este monto es el efectivo con el que inicia la caja.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="abrirCaja()">
+                    <i class="bi bi-check-circle"></i> Abrir Caja
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.stat-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease; border-left: 4px solid; height: 100%; }
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); }
-.stat-card.verde { border-left-color: #22c55e; }
-.stat-card.rojo { border-left-color: #ef4444; }
-.stat-card.amarillo { border-left-color: #eab308; }
-.stat-card.dorado { border-left-color: #d4af37; }
-.stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
-.stat-card.verde .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-.stat-card.rojo .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-.stat-card.amarillo .stat-icon { background: rgba(234, 179, 8, 0.1); color: #eab308; }
-.stat-card.dorado .stat-icon { background: rgba(212, 175, 55, 0.1); color: #d4af37; }
-.stat-value { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin: 8px 0; }
-.stat-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
-table thead th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; padding: 12px; }
-table tbody td { padding: 12px; vertical-align: middle; }
-.badge { padding: 0.35em 0.65em; font-size: 0.85em; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .stat-card { padding: 12px; }
-    .stat-icon { width: 38px; height: 38px; font-size: 18px; margin-bottom: 8px; }
-    .stat-value { font-size: 1.25rem; }
-    table { font-size: 0.85rem; }
-    table thead th, table tbody td { padding: 8px 6px; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select { min-height: 44px; } }
-</style>
+<!-- Modal Cerrar Caja -->
+<div class="modal fade" id="modalCerrarCaja" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="tituloModalCerrar"><i class="bi bi-box-arrow-up"></i> Cerrar Caja</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+<div class="modal-body">
+                <!-- Resumen de Caja -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="alert alert-primary mb-0">
+                            <small class="text-muted d-block">Monto Inicial:</small>
+                            <strong id="cierreInicial">Q 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-success mb-0">
+                            <small class="text-muted d-block">Total Ingresos:</small>
+                            <strong id="cierreIngresos">Q 0.00</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="alert alert-warning mb-0">
+                            <small class="text-muted d-block">Monto Esperado:</small>
+                            <strong id="cierreEsperado">Q 0.00</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historial de Movimientos -->
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white py-2">
+                        <h6 class="mb-0"><i class="bi bi-list-ul"></i> Movimientos (<span id="cantidadMovimientos">0</span>)</h6>
+                    </div>
+                    <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="width: 35%;">Concepto</th>
+                                    <th style="width: 25%;">Fecha/Hora</th>
+                                    <th style="width: 20%;">Tipo</th>
+                                    <th class="text-end" style="width: 20%;">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaMovimientosCierre">
+                                <tr><td colspan="4" class="text-center text-muted">Sin movimientos</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <form id="formCerrarCaja">
+                    <div class="mb-3">
+                        <label for="montoReal" class="form-label">
+                            Monto Real Contado (Q) <span class="text-danger">*</span>
+                        </label>
+                        <input type="number" class="form-control form-control-lg" id="montoReal" 
+                               step="0.01" min="0" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="observacionesCierre" class="form-label">Observaciones</label>
+                        <textarea class="form-control" id="observacionesCierre" rows="2" 
+                                  placeholder="Opcional: notas sobre el cierre..."></textarea>
+                    </div>
+
+                    <div id="previewDiferencia" style="display: none;" class="alert">
+                        <strong>Diferencia:</strong> <span id="textoDiferencia"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-warning" onclick="cerrarCaja()">
+                    <i class="bi bi-check-circle"></i> Cerrar Caja
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php require_once '../../includes/footer.php'; ?>
+
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
-let cajaActual = null;
-
-document.addEventListener('DOMContentLoaded', function() {
-    cargarCajaActual();
-    cargarCajas();
-    cargarUsuarios();
+// Forzar recarga al volver
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+        window.location.reload();
+    }
 });
 
-function cargarCajaActual() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/caja/actual.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.data) {
-                cajaActual = data.data;
-                mostrarCajaActual(data.data);
+let cajasData = [];
+let cajasAbiertas = [];
+let cajaACerrar = null;
+
+async function init() {
+    await cargarCajasAbiertas();
+    await cargarHistorial();
+    await cargarSucursales();
+    await cargarUsuarios();
+    
+    const hoy = new Date();
+    const hace7dias = new Date();
+    hace7dias.setDate(hoy.getDate() - 7);
+    
+    document.getElementById('fechaDesde').valueAsDate = hace7dias;
+    document.getElementById('fechaHasta').valueAsDate = hoy;
+    
+    configurarEventos();
+}
+
+async function cargarCajasAbiertas() {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/caja/listar.php?estado=abierta');
+        const data = await res.json();
+        
+        if (!data.success) {
+            cajasAbiertas = [];
+            return;
+        }
+        
+        cajasAbiertas = data.data || [];
+        
+        if (cajasAbiertas.length === 0) {
+            document.getElementById('cajasAbiertasContainer').innerHTML = '';
+            return;
+        }
+        
+        for (let caja of cajasAbiertas) {
+            await cargarTotalesCaja(caja);
+        }
+        
+        mostrarCajasAbiertas();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        cajasAbiertas = [];
+    }
+}
+
+async function cargarTotalesCaja(caja) {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/caja/movimientos.php?caja_id=' + caja.id);
+        const data = await res.json();
+        
+        if (!data.success) {
+            caja.total_ingresos = 0;
+            caja.total_egresos = 0;
+            caja.total_final = parseFloat(caja.monto_inicial) || 0;
+            return;
+        }
+        
+        const movimientos = data.data || [];
+        let ingresos = 0;
+        let egresos = 0;
+        
+        movimientos.forEach(m => {
+            const monto = parseFloat(m.monto) || 0;
+            if (m.categoria === 'ingreso') {
+                ingresos += monto;
+            } else if (m.categoria === 'egreso') {
+                egresos += monto;
             }
         });
-    */
+        
+        caja.total_ingresos = ingresos;
+        caja.total_egresos = egresos;
+        caja.total_final = (parseFloat(caja.monto_inicial) || 0) + ingresos - egresos;
+        
+    } catch (error) {
+        console.error('Error al cargar totales:', error);
+        caja.total_ingresos = 0;
+        caja.total_egresos = 0;
+        caja.total_final = parseFloat(caja.monto_inicial) || 0;
+    }
 }
 
-function mostrarCajaActual(caja) {
-    document.getElementById('btnAbrir').style.display = 'none';
+function mostrarCajasAbiertas() {
+    const container = document.getElementById('cajasAbiertasContainer');
     
-    const botonesAccion = document.getElementById('botonesAccion');
-    botonesAccion.innerHTML = `
-        <a href="ver.php?id=${caja.id}" class="btn btn-info btn-lg">
-            <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Ver Caja Actual</span>
-        </a>
-        <a href="cerrar.php?id=${caja.id}" class="btn btn-danger btn-lg">
-            <i class="bi bi-box-arrow-up"></i> <span class="d-none d-sm-inline">Cerrar Caja</span>
-        </a>
-    `;
-    
-    const efectivoEsperado = parseFloat(caja.monto_inicial) + parseFloat(caja.ingresos_total || 0) - parseFloat(caja.egresos_total || 0);
-    
-    document.getElementById('infoCajaActual').innerHTML = `
-        <strong>Apertura:</strong> ${formatearFechaHora(caja.fecha_apertura)} | 
-        <strong>Monto Inicial:</strong> Q ${formatearMoneda(caja.monto_inicial)} | 
-        <strong>Usuario:</strong> <?php echo $usuario_actual['nombre']; ?> | 
-        <strong>Sucursal:</strong> <?php echo $usuario_actual['sucursal_nombre']; ?>
-    `;
-    
-    document.getElementById('efectivoActual').textContent = 'Efectivo: Q ' + formatearMoneda(efectivoEsperado);
-    document.getElementById('detalleEfectivo').textContent = `(${formatearMoneda(caja.ingresos_total || 0)} ingresos - ${formatearMoneda(caja.egresos_total || 0)} egresos)`;
-    document.getElementById('alertCajaActual').style.display = 'block';
-}
-
-function cargarCajas() {
-    /* TODO FASE 5: Descomentar
-    const params = new URLSearchParams({
-        fecha_desde: document.getElementById('fechaDesde').value,
-        fecha_hasta: document.getElementById('fechaHasta').value,
-        sucursal_id: document.getElementById('filterSucursal').value,
-        usuario_id: document.getElementById('filterUsuario').value
-    });
-    
-    fetch('<?php echo BASE_URL; ?>api/caja/lista.php?' + params)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderizarCajas(data.data);
-                actualizarEstadisticas(data.resumen);
-            } else {
-                mostrarError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarError('Error al cargar las cajas');
-        });
-    */
-    
-    setTimeout(() => {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
-        document.getElementById('noResults').innerHTML = '<i class="bi bi-database" style="font-size: 48px; opacity: 0.3;"></i><p class="mt-3 text-muted">MODO DESARROLLO: Esperando API</p>';
-    }, 1500);
-}
-
-function cargarUsuarios() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/empleados/lista.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('filterUsuario');
-                data.data.forEach(u => {
-                    const option = document.createElement('option');
-                    option.value = u.id;
-                    option.textContent = u.nombre;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
-}
-
-function renderizarCajas(cajas) {
-    const tbody = document.getElementById('cajasBody');
-    
-    if (cajas.length === 0) {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
+    if (cajasAbiertas.length === 0) {
+        container.innerHTML = '';
         return;
     }
     
     let html = '';
-    let totalInicial = 0, totalEsperado = 0, totalReal = 0;
+    
+    cajasAbiertas.forEach(caja => {
+        const monto_inicial = parseFloat(caja.monto_inicial) || 0;
+        const total_ingresos = parseFloat(caja.total_ingresos) || 0;
+        const total_final = parseFloat(caja.total_final) || monto_inicial;
+        
+        html += '<div class="card shadow-sm mb-3 border-success border-3">';
+        html += '<div class="card-header bg-success text-white d-flex justify-content-between align-items-center">';
+        html += '<h5 class="mb-0"><i class="bi bi-check-circle"></i> Caja Abierta - ' + escaparHTML(caja.sucursal_nombre || 'Sin nombre') + '</h5>';
+        html += '<button type="button" class="btn btn-light btn-sm" onclick="prepararCerrarCaja(' + caja.id + ')">';
+        html += '<i class="bi bi-box-arrow-up"></i> Cerrar Esta Caja';
+        html += '</button>';
+        html += '</div>';
+        html += '<div class="card-body">';
+        html += '<div class="row">';
+        html += '<div class="col-md-3"><small class="text-muted">Sucursal:</small><p class="fw-bold mb-0">' + escaparHTML(caja.sucursal_nombre || '-') + '</p></div>';
+        html += '<div class="col-md-3"><small class="text-muted">Fecha Apertura:</small><p class="mb-0">' + formatearFechaHora(caja.fecha_apertura) + '</p></div>';
+        html += '<div class="col-md-2"><small class="text-muted">Monto Inicial:</small><p class="fw-bold text-primary mb-0">' + formatearMoneda(monto_inicial) + '</p></div>';
+        html += '<div class="col-md-2"><small class="text-muted">Total Ingresos:</small><p class="fw-bold text-success mb-0">' + formatearMoneda(total_ingresos) + '</p></div>';
+        html += '<div class="col-md-2"><small class="text-muted">Total Final:</small><p class="fw-bold text-dark mb-0 fs-5">' + formatearMoneda(total_final) + '</p></div>';
+        html += '</div></div></div>';
+    });
+    
+    container.innerHTML = html;
+    
+    document.getElementById('btnAbrirCaja').innerHTML = '<i class="bi bi-check-circle"></i> Caja Ya Abierta';
+}
+
+async function prepararCerrarCaja(cajaId) {
+    const caja = cajasAbiertas.find(c => c.id === cajaId);
+    
+    if (!caja) {
+        mostrarError('No se encontró la caja');
+        return;
+    }
+    
+    cajaACerrar = cajaId;
+    
+    const montoInicial = parseFloat(caja.monto_inicial) || 0;
+    const totalIngresos = parseFloat(caja.total_ingresos) || 0;
+    const montoEsperado = parseFloat(caja.total_final) || 0;
+    
+    // Actualizar información del modal
+    document.getElementById('tituloModalCerrar').innerHTML = '<i class="bi bi-box-arrow-up"></i> Cerrar Caja - ' + escaparHTML(caja.sucursal_nombre);
+    document.getElementById('cierreInicial').textContent = formatearMoneda(montoInicial);
+    document.getElementById('cierreIngresos').textContent = formatearMoneda(totalIngresos);
+    document.getElementById('cierreEsperado').textContent = formatearMoneda(montoEsperado);
+    document.getElementById('montoReal').value = montoEsperado.toFixed(2);
+    document.getElementById('observacionesCierre').value = '';
+    document.getElementById('previewDiferencia').style.display = 'none';
+    
+    // Cargar movimientos
+    await cargarMovimientosCierre(cajaId);
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalCerrarCaja'));
+    modal.show();
+}
+
+async function cargarMovimientosCierre(cajaId) {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/caja/movimientos.php?caja_id=' + cajaId);
+        const data = await res.json();
+        
+        if (!data.success) {
+            document.getElementById('tablaMovimientosCierre').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Error al cargar movimientos</td></tr>';
+            document.getElementById('cantidadMovimientos').textContent = '0';
+            return;
+        }
+        
+        const movimientos = data.data || [];
+        document.getElementById('cantidadMovimientos').textContent = movimientos.length;
+        
+        if (movimientos.length === 0) {
+            document.getElementById('tablaMovimientosCierre').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Sin movimientos</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        
+        movimientos.forEach(m => {
+            const esIngreso = m.categoria === 'ingreso';
+            const clase = esIngreso ? 'text-success' : 'text-danger';
+            const signo = esIngreso ? '+' : '-';
+            
+            html += '<tr>';
+            html += '<td><small>' + escaparHTML(m.concepto) + '</small></td>';
+            html += '<td><small>' + formatearFechaHora(m.fecha_hora) + '</small></td>';
+            html += '<td><span class="badge ' + (esIngreso ? 'bg-success' : 'bg-danger') + '">' + escaparHTML(m.tipo_movimiento) + '</span></td>';
+            html += '<td class="text-end ' + clase + '"><strong>' + signo + formatearMoneda(m.monto) + '</strong></td>';
+            html += '</tr>';
+        });
+        
+        document.getElementById('tablaMovimientosCierre').innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error al cargar movimientos:', error);
+        document.getElementById('tablaMovimientosCierre').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar movimientos</td></tr>';
+        document.getElementById('cantidadMovimientos').textContent = '0';
+    }
+}
+
+async function cargarHistorial() {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/caja/listar.php');
+        const data = await res.json();
+        
+        if (!data.success) {
+            mostrarError('Error al cargar historial');
+            return;
+        }
+        
+        cajasData = data.data || [];
+        aplicarFiltros();
+        actualizarEstadisticas();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarError('Error al cargar historial');
+    }
+}
+
+function actualizarEstadisticas() {
+    const stats = {
+        cuadradas: 0,
+        faltante: 0,
+        sobrante: 0,
+        totalRecaudado: 0
+    };
+    
+    cajasData.forEach(c => {
+        if (c.estado !== 'cerrada') return;
+        
+        const dif = parseFloat(c.diferencia) || 0;
+        
+        if (Math.abs(dif) < 0.01) {
+            stats.cuadradas++;
+        } else if (dif < 0) {
+            stats.faltante++;
+        } else {
+            stats.sobrante++;
+        }
+        
+        stats.totalRecaudado += parseFloat(c.monto_real) || 0;
+    });
+    
+    document.getElementById('totalCuadradas').textContent = stats.cuadradas;
+    document.getElementById('totalFaltante').textContent = stats.faltante;
+    document.getElementById('totalSobrante').textContent = stats.sobrante;
+    document.getElementById('totalRecaudado').textContent = formatearMoneda(stats.totalRecaudado);
+}
+
+function aplicarFiltros() {
+    const desde = document.getElementById('fechaDesde').value;
+    const hasta = document.getElementById('fechaHasta').value;
+    const sucursal = document.getElementById('filtroSucursal').value;
+    const usuario = document.getElementById('filtroUsuario').value;
+    
+    let filtradas = cajasData.filter(c => {
+        if (desde && c.fecha_apertura < desde) return false;
+        if (hasta && c.fecha_apertura > hasta + ' 23:59:59') return false;
+        if (sucursal && c.sucursal_id != sucursal) return false;
+        if (usuario && c.usuario_id != usuario) return false;
+        return true;
+    });
+    
+    renderizarTabla(filtradas);
+}
+
+function renderizarTabla(cajas) {
+    const tbody = document.getElementById('tablaCajas');
+    
+    if (!cajas || cajas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No hay cajas para mostrar</td></tr>';
+        return;
+    }
+    
+    let html = '';
     
     cajas.forEach(c => {
-        totalInicial += parseFloat(c.monto_inicial);
-        totalEsperado += parseFloat(c.monto_esperado || 0);
-        totalReal += parseFloat(c.monto_real || 0);
+        const dif = parseFloat(c.diferencia) || 0;
+        let difClass = 'text-success';
+        let difIcon = 'check-circle';
         
-        html += `
-            <tr>
-                <td class="fw-bold">${c.id}</td>
-                <td>
-                    <div>${formatearFecha(c.fecha_apertura)}</div>
-                    <small class="text-muted">${formatearHora(c.fecha_apertura)}</small>
-                </td>
-                <td class="d-none d-md-table-cell">
-                    ${c.fecha_cierre ? `<div>${formatearFecha(c.fecha_cierre)}</div><small class="text-muted">${formatearHora(c.fecha_cierre)}</small>` : '<span class="badge bg-warning">Abierta</span>'}
-                </td>
-                <td>${c.usuario_nombre}</td>
-                <td class="d-none d-lg-table-cell">${c.sucursal_nombre}</td>
-                <td class="d-none d-xl-table-cell">Q ${formatearMoneda(c.monto_inicial)}</td>
-                <td class="d-none d-xl-table-cell">Q ${formatearMoneda(c.monto_esperado || 0)}</td>
-                <td class="fw-bold">Q ${formatearMoneda(c.monto_real || 0)}</td>
-                <td>${getBadgeDiferencia(c.diferencia)}</td>
-                <td class="d-none d-lg-table-cell"><span class="badge bg-info">${c.total_ventas || 0}</span></td>
-                <td class="text-center">
-                    <div class="btn-group">
-                        <a href="ver.php?id=${c.id}" class="btn btn-sm btn-info" title="Ver"><i class="bi bi-eye"></i></a>
-                        <button class="btn btn-sm btn-secondary" onclick="imprimirArqueo(${c.id})" title="Imprimir"><i class="bi bi-printer"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        if (Math.abs(dif) > 0.01) {
+            if (dif < 0) {
+                difClass = 'text-danger';
+                difIcon = 'exclamation-triangle';
+            } else {
+                difClass = 'text-warning';
+                difIcon = 'plus-circle';
+            }
+        }
+        
+        html += '<tr>';
+        html += '<td>' + escaparHTML(c.sucursal_nombre || '-') + '</td>';
+        html += '<td>' + escaparHTML(c.usuario_nombre || '-') + '</td>';
+        html += '<td><small>' + formatearFechaHora(c.fecha_apertura) + '</small></td>';
+        html += '<td><small>' + (c.fecha_cierre ? formatearFechaHora(c.fecha_cierre) : '-') + '</small></td>';
+        html += '<td>' + formatearMoneda(c.monto_inicial) + '</td>';
+        html += '<td>' + formatearMoneda(c.monto_esperado) + '</td>';
+        html += '<td>' + formatearMoneda(c.monto_real) + '</td>';
+        html += '<td class="' + difClass + '"><i class="bi bi-' + difIcon + '"></i> ' + formatearMoneda(Math.abs(dif)) + '</td>';
+        html += '<td><span class="badge ' + (c.estado === 'abierta' ? 'bg-success' : 'bg-secondary') + '">' + (c.estado === 'abierta' ? 'Abierta' : 'Cerrada') + '</span></td>';
+        html += '<td class="text-center">' + (c.estado === 'cerrada' ? '<a href="ver.php?id=' + c.id + '" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>' : '-') + '</td>';
+        html += '</tr>';
     });
     
     tbody.innerHTML = html;
-    document.getElementById('totalInicial').textContent = 'Q ' + formatearMoneda(totalInicial);
-    document.getElementById('totalEsperado').textContent = 'Q ' + formatearMoneda(totalEsperado);
-    document.getElementById('totalReal').textContent = 'Q ' + formatearMoneda(totalReal);
+}
+
+async function cargarSucursales() {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/sucursales/listar.php?activo=1');
+        const data = await res.json();
+        
+        if (!data.success) return;
+        
+        const sucursales = data.data || [];
+        const selects = [document.getElementById('sucursalAbrir'), document.getElementById('filtroSucursal')];
+        
+        selects.forEach(select => {
+            if (!select) return;
+            sucursales.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = s.nombre;
+                select.appendChild(option);
+            });
+        });
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function cargarUsuarios() {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/usuarios/listar.php');
+        const data = await res.json();
+        
+        if (!data.success) return;
+        
+        const usuarios = data.data.usuarios || data.data || [];
+        const select = document.getElementById('filtroUsuario');
+        
+        if (!select) return;
+        
+        usuarios.forEach(u => {
+            const option = document.createElement('option');
+            option.value = u.id;
+            option.textContent = u.nombre;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function abrirCaja() {
+    const sucursal = document.getElementById('sucursalAbrir').value;
+    const monto = document.getElementById('montoInicial').value;
     
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('tableContainer').style.display = 'block';
-    document.getElementById('tableFoot').style.display = 'table-footer-group';
-    document.getElementById('tableFooter').style.display = 'block';
-    document.getElementById('contadorCajas').textContent = `Mostrando ${cajas.length} cajas`;
-    document.getElementById('tituloTabla').textContent = `Historial de Cajas (${cajas.length})`;
+    if (!sucursal || !monto) {
+        mostrarError('Complete todos los campos');
+        return;
+    }
+    
+    try {
+        mostrarCargando();
+        
+        const res = await fetch('/joyeria-torre-fuerte/api/caja/abrir_caja.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sucursal_id: parseInt(sucursal),
+                monto_inicial: parseFloat(monto)
+            })
+        });
+        
+        const resultado = await res.json();
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalAbrirCaja'));
+            modal.hide();
+            
+            await mostrarExito(resultado.message);
+            window.location.reload();
+        } else {
+            mostrarError(resultado.error || resultado.message || 'Error al abrir caja');
+        }
+    } catch (error) {
+        ocultarCargando();
+        mostrarError('Error: ' + error.message);
+    }
 }
 
-function actualizarEstadisticas(resumen) {
-    document.getElementById('statCuadradas').textContent = resumen.cuadradas || 0;
-    document.getElementById('statFaltante').textContent = resumen.faltante || 0;
-    document.getElementById('statSobrante').textContent = resumen.sobrante || 0;
-    document.getElementById('statTotal').textContent = 'Q ' + formatearMoneda(resumen.total_recaudado || 0).split('.')[0];
+async function cerrarCaja() {
+    const montoReal = document.getElementById('montoReal').value;
+    const observaciones = document.getElementById('observacionesCierre').value;
+    
+    if (!montoReal) {
+        mostrarError('Ingrese el monto real contado');
+        return;
+    }
+    
+    if (!cajaACerrar) {
+        mostrarError('No se ha seleccionado una caja para cerrar');
+        return;
+    }
+    
+    const confirmacion = await confirmarAccion('¿Cerrar la caja?', 'Esta acción no se puede deshacer');
+    if (!confirmacion) return;
+    
+    try {
+        mostrarCargando();
+        
+        const res = await fetch('/joyeria-torre-fuerte/api/caja/cerrar_caja.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                caja_id: cajaACerrar,
+                monto_real: parseFloat(montoReal),
+                observaciones: observaciones || null
+            })
+        });
+        
+        const resultado = await res.json();
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCerrarCaja'));
+            if (modal) modal.hide();
+            
+            await mostrarExito(resultado.message);
+            window.location.reload();
+        } else {
+            mostrarError(resultado.error || resultado.message || 'Error');
+        }
+    } catch (error) {
+        ocultarCargando();
+        mostrarError('Error: ' + error.message);
+    }
 }
 
-function getBadgeDiferencia(diferencia) {
-    const diff = parseFloat(diferencia);
-    if (diff === 0) return '<span class="badge bg-success">Q 0.00</span>';
-    if (diff < 0) return `<span class="badge bg-danger">-Q ${formatearMoneda(Math.abs(diff))}</span>`;
-    return `<span class="badge bg-warning text-dark">+Q ${formatearMoneda(diff)}</span>`;
+function configurarEventos() {
+    const inputMontoReal = document.getElementById('montoReal');
+    if (inputMontoReal) {
+        inputMontoReal.addEventListener('input', function() {
+            const caja = cajasAbiertas.find(c => c.id === cajaACerrar);
+            if (!caja) return;
+            
+            const esperado = parseFloat(caja.total_final) || 0;
+            const real = parseFloat(this.value) || 0;
+            const dif = real - esperado;
+            
+            const preview = document.getElementById('previewDiferencia');
+            const texto = document.getElementById('textoDiferencia');
+            
+            if (!preview || !texto) return;
+            
+            if (Math.abs(dif) < 0.01) {
+                preview.className = 'alert alert-success';
+                texto.innerHTML = '<i class="bi bi-check-circle"></i> Cuadrado (sin diferencias)';
+            } else if (dif < 0) {
+                preview.className = 'alert alert-danger';
+                texto.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Faltante de ' + formatearMoneda(Math.abs(dif));
+            } else {
+                preview.className = 'alert alert-warning';
+                texto.innerHTML = '<i class="bi bi-plus-circle"></i> Sobrante de ' + formatearMoneda(dif);
+            }
+            
+            preview.style.display = 'block';
+        });
+    }
 }
 
-function aplicarFiltros() { cargarCajas(); }
-
-function imprimirArqueo(id) { alert('MODO DESARROLLO: Imprimir arqueo #' + id); }
-
-function formatearMoneda(monto) {
-    return parseFloat(monto).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-function formatearFecha(fecha) {
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatearHora(fecha) {
-    const d = new Date(fecha);
-    return d.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatearFechaHora(fecha) {
-    return formatearFecha(fecha) + ' ' + formatearHora(fecha);
-}
-
-function mostrarError(mensaje) {
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('noResults').style.display = 'block';
-    document.getElementById('noResults').innerHTML = `<i class="bi bi-exclamation-triangle text-danger" style="font-size: 48px;"></i><p class="mt-3 text-danger">${mensaje}</p>`;
-}
+document.addEventListener('DOMContentLoaded', init);
 </script>
-
-<?php include '../../includes/footer.php'; ?>

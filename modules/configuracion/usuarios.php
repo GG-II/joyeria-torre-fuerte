@@ -1,18 +1,8 @@
 <?php
 /**
  * ================================================
- * MÓDULO CONFIGURACIÓN - GESTIÓN DE USUARIOS
+ * MÓDULO USUARIOS - LISTA
  * ================================================
- * 
- * TODO FASE 5: Conectar con API
- * GET /api/configuracion/usuarios.php - Listar usuarios
- * POST /api/configuracion/usuarios.php - Crear usuario
- * PUT /api/configuracion/usuarios.php - Actualizar usuario
- * POST /api/configuracion/usuarios/reset-password.php - Reset contraseña
- * 
- * Tabla BD: usuarios
- * Campos: id, nombre, email, password, rol, sucursal_id, foto_perfil, activo, 
- *         fecha_creacion, ultimo_acceso
  */
 
 require_once '../../config.php';
@@ -23,314 +13,306 @@ require_once '../../includes/auth.php';
 requiere_autenticacion();
 requiere_rol(['administrador', 'dueño']);
 
-$titulo_pagina = 'Gestión de Usuarios';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <div class="page-header mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <h1 class="mb-2"><i class="bi bi-people"></i> Gestión de Usuarios</h1>
-                <p class="text-muted mb-0">Administración de usuarios del sistema</p>
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-people"></i> Gestión de Usuarios</h2>
+            <p class="text-muted mb-0">Administración de usuarios del sistema</p>
+        </div>
+        <a href="agregar-usuario.php" class="btn btn-warning btn-lg">
+            <i class="bi bi-plus-circle"></i> Nuevo Usuario
+        </a>
+    </div>
+
+    <hr class="border-warning border-2 opacity-75 mb-4">
+
+    <!-- Cards de Estadísticas -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-people fs-2 text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="totalUsuarios">0</h3>
+                            <p class="text-muted mb-0">Total Usuarios</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6 text-md-end">
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario" onclick="prepararNuevoUsuario()">
-                    <i class="bi bi-person-plus"></i> Nuevo Usuario
-                </button>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-check-circle fs-2 text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="usuariosActivos">0</h3>
+                            <p class="text-muted mb-0">Activos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-start border-danger border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-x-circle fs-2 text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="usuariosInactivos">0</h3>
+                            <p class="text-muted mb-0">Inactivos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-shield-check fs-2 text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="administradores">0</h3>
+                            <p class="text-muted mb-0">Administradores</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="loadingState" class="text-center py-5">
-        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 text-muted">Cargando usuarios...</p>
-    </div>
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="inputBuscar" 
+                               placeholder="Nombre o email...">
+                    </div>
+                </div>
 
-    <div id="mainContent" style="display: none;">
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="stat-card azul">
-                    <div class="stat-icon"><i class="bi bi-people"></i></div>
-                    <div class="stat-value" id="statTotal">0</div>
-                    <div class="stat-label">Total Usuarios</div>
+                <div class="col-md-3">
+                    <label class="form-label">Rol</label>
+                    <select class="form-select" id="selectRol">
+                        <option value="">Todos</option>
+                        <option value="administrador">Administrador</option>
+                        <option value="dueño">Dueño</option>
+                        <option value="vendedor">Vendedor</option>
+                        <option value="cajero">Cajero</option>
+                        <option value="orfebre">Orfebre</option>
+                        <option value="publicidad">Publicidad</option>
+                    </select>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card verde">
-                    <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                    <div class="stat-value" id="statActivos">0</div>
-                    <div class="stat-label">Activos</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card rojo">
-                    <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
-                    <div class="stat-value" id="statInactivos">0</div>
-                    <div class="stat-label">Inactivos</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card dorado">
-                    <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
-                    <div class="stat-value" id="statAdmins">0</div>
-                    <div class="stat-label">Administradores</div>
-                </div>
-            </div>
-        </div>
 
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Buscar</label>
-                        <input type="text" class="form-control" id="searchInput" placeholder="Nombre o email...">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Rol</label>
-                        <select class="form-select" id="filterRol">
-                            <option value="">Todos</option>
-                            <option value="administrador">Administrador</option>
-                            <option value="dueño">Dueño</option>
-                            <option value="vendedor">Vendedor</option>
-                            <option value="cajero">Cajero</option>
-                            <option value="orfebre">Orfebre</option>
-                            <option value="publicidad">Publicidad</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Estado</label>
-                        <select class="form-select" id="filterEstado">
-                            <option value="">Todos</option>
-                            <option value="1">Activos</option>
-                            <option value="0">Inactivos</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label d-none d-md-block">&nbsp;</label>
-                        <button class="btn btn-secondary w-100" onclick="limpiarFiltros()">
-                            <i class="bi bi-x-circle"></i> Limpiar
-                        </button>
-                    </div>
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" id="selectEstado">
+                        <option value="" selected>Todos</option>
+                        <option value="1">Activos</option>
+                        <option value="0">Inactivos</option>
+                    </select>
                 </div>
-            </div>
-        </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <i class="bi bi-table"></i> Listado de Usuarios (<span id="contadorUsuarios">0</span>)
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead style="background-color: #f3f4f6;">
-                            <tr>
-                                <th>#</th>
-                                <th>Usuario</th>
-                                <th class="d-none d-md-table-cell">Email</th>
-                                <th>Rol</th>
-                                <th class="d-none d-lg-table-cell">Sucursal</th>
-                                <th class="d-none d-lg-table-cell">Último Acceso</th>
-                                <th>Estado</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usuariosBody">
-                            <tr><td colspan="8" class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></td></tr>
-                        </tbody>
-                    </table>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" id="btnLimpiar">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-table"></i> Listado de Usuarios (0)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tablaUsuarios">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="25%">Usuario</th>
+                            <th width="25%">Email</th>
+                            <th width="15%">Rol</th>
+                            <th width="15%">Sucursal</th>
+                            <th width="10%">Estado</th>
+                            <th width="5%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaUsuariosBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="modal fade" id="modalUsuario" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: #1e3a8a; color: white;">
-                <h5 class="modal-title" id="tituloModal">
-                    <i class="bi bi-person-plus"></i> Nuevo Usuario
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formUsuario">
-                    <input type="hidden" name="id" id="usuarioId">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre Completo *</label>
-                        <input type="text" class="form-control" name="nombre" id="nombre" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email *</label>
-                        <input type="email" class="form-control" name="email" id="emailUsuario" required>
-                    </div>
-                    <div class="mb-3" id="passwordGroup">
-                        <label class="form-label">Contraseña *</label>
-                        <input type="password" class="form-control" name="password" id="password">
-                        <small class="text-muted">Mínimo 8 caracteres</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Rol *</label>
-                        <select class="form-select" name="rol" id="rol" required>
-                            <option value="">Seleccione...</option>
-                            <option value="administrador">Administrador</option>
-                            <option value="dueño">Dueño</option>
-                            <option value="vendedor">Vendedor</option>
-                            <option value="cajero">Cajero</option>
-                            <option value="orfebre">Orfebre</option>
-                            <option value="publicidad">Publicidad</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sucursal</label>
-                        <select class="form-select" name="sucursal_id" id="sucursal_id">
-                            <option value="">Sin sucursal específica</option>
-                        </select>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="activo" id="activo" checked>
-                        <label class="form-check-label">Usuario activo</label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarUsuario()">
-                    <i class="bi bi-save"></i> Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<?php require_once '../../includes/footer.php'; ?>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.stat-card { background: linear-gradient(135deg, var(--card-color-start) 0%, var(--card-color-end) 100%); border-radius: 12px; padding: 20px; color: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); transition: transform 0.2s ease; height: 100%; }
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); }
-.stat-card.azul { --card-color-start: #1e3a8a; --card-color-end: #1e40af; }
-.stat-card.verde { --card-color-start: #22c55e; --card-color-end: #16a34a; }
-.stat-card.rojo { --card-color-start: #ef4444; --card-color-end: #dc2626; }
-.stat-card.dorado { --card-color-start: #d4af37; --card-color-end: #b8941f; }
-.stat-icon { width: 50px; height: 50px; border-radius: 10px; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 15px; color: white; }
-.stat-value { font-size: 1.75rem; font-weight: 700; margin: 10px 0; color: white !important; }
-.stat-label { font-size: 0.85rem; opacity: 0.95; font-weight: 500; color: white !important; }
-table thead th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; padding: 12px; }
-table tbody td { padding: 12px; vertical-align: middle; }
-.user-avatar { width: 35px; height: 35px; border-radius: 50%; background: #1e3a8a; color: white; display: flex; align-items: center; justify-content: center; margin-right: 10px; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .stat-card { padding: 15px; }
-    .stat-value { font-size: 1.5rem; }
-    table { font-size: 0.85rem; }
-    table thead th, table tbody td { padding: 8px 6px; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select { min-height: 44px; } }
-</style>
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
 let usuariosData = [];
-const badgeRoles = {
-    'administrador': 'bg-danger',
-    'dueño': 'bg-warning text-dark',
-    'vendedor': 'bg-primary',
-    'cajero': 'bg-info',
-    'orfebre': 'bg-success',
-    'publicidad': 'bg-secondary'
-};
+let usuariosFiltrados = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    cargarUsuarios();
-    cargarSucursales();
-    
-    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
-    document.getElementById('filterRol').addEventListener('change', aplicarFiltros);
-    document.getElementById('filterEstado').addEventListener('change', aplicarFiltros);
-});
-
-function cargarUsuarios() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/configuracion/usuarios.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                usuariosData = data.data;
-                renderizarUsuarios();
-                actualizarEstadisticas();
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    */
-    
-    setTimeout(() => {
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-        mostrarMensajeDesarrollo();
-    }, 1500);
+async function cargarUsuarios() {
+    try {
+        mostrarCargando();
+        
+        const estado = document.getElementById('selectEstado').value;
+        const rol = document.getElementById('selectRol').value;
+        const filtros = {};
+        
+        if (estado !== '') filtros.activo = estado;
+        if (rol) filtros.rol = rol;
+        
+        const resultado = await api.listarUsuarios(filtros);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            usuariosData = resultado.data || [];
+            usuariosFiltrados = [...usuariosData];
+            
+            actualizarEstadisticas();
+            aplicarFiltros();
+        } else {
+            mostrarError('No se pudieron cargar los usuarios');
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error: ' + error.message);
+        mostrarMensajeVacio('tablaUsuarios', 'Error al cargar datos', 7);
+    }
 }
 
-function cargarSucursales() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/configuracion/sucursales.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('sucursal_id');
-                data.data.forEach(s => {
-                    const option = document.createElement('option');
-                    option.value = s.id;
-                    option.textContent = s.nombre;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
+function actualizarEstadisticas() {
+    const total = usuariosData.length;
+    const activos = usuariosData.filter(u => u.activo == 1).length;
+    const inactivos = total - activos;
+    const admins = usuariosData.filter(u => u.rol === 'administrador').length;
+    
+    document.getElementById('totalUsuarios').textContent = formatearNumero(total);
+    document.getElementById('usuariosActivos').textContent = formatearNumero(activos);
+    document.getElementById('usuariosInactivos').textContent = formatearNumero(inactivos);
+    document.getElementById('administradores').textContent = formatearNumero(admins);
+    
+    document.querySelector('.card-header h5').textContent = `Listado de Usuarios (${usuariosFiltrados.length})`;
 }
 
-function renderizarUsuarios() {
-    const tbody = document.getElementById('usuariosBody');
-    const usuarios = filtrarUsuarios();
+function aplicarFiltros() {
+    const buscar = document.getElementById('inputBuscar').value.toLowerCase().trim();
     
-    if (usuarios.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">Sin usuarios que mostrar</td></tr>';
-        document.getElementById('contadorUsuarios').textContent = '0';
+    usuariosFiltrados = usuariosData.filter(usuario => {
+        if (buscar) {
+            const nombre = (usuario.nombre || '').toLowerCase();
+            const email = (usuario.email || '').toLowerCase();
+            
+            if (!nombre.includes(buscar) && !email.includes(buscar)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    mostrarUsuarios();
+    actualizarEstadisticas();
+}
+
+function mostrarUsuarios() {
+    const tbody = document.getElementById('tablaUsuariosBody');
+    
+    if (usuariosFiltrados.length === 0) {
+        mostrarMensajeVacio('tablaUsuarios', 'No hay usuarios para mostrar', 7);
         return;
     }
     
     let html = '';
-    usuarios.forEach(u => {
-        const badgeRol = badgeRoles[u.rol] || 'bg-secondary';
-        const badgeEstado = u.activo ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-secondary">Inactivo</span>';
-        const iniciales = u.nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    
+    usuariosFiltrados.forEach((usuario, index) => {
+        const badgeEstado = usuario.activo == 1 
+            ? '<span class="badge bg-success">Activo</span>'
+            : '<span class="badge bg-secondary">Inactivo</span>';
+        
+        const badgeRol = obtenerBadgeRol(usuario.rol);
+        
+        const btnVer = `
+            <a href="ver-usuario.php?id=${usuario.id}" 
+               class="btn btn-sm btn-outline-info" 
+               title="Ver">
+                <i class="bi bi-eye"></i>
+            </a>
+        `;
+        
+        const btnEditar = `
+            <a href="editar-usuario.php?id=${usuario.id}" 
+               class="btn btn-sm btn-outline-warning" 
+               title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+        `;
+        
+        const btnEstado = usuario.activo == 1
+            ? `<button class="btn btn-sm btn-outline-danger" 
+                       onclick="cambiarEstado(${usuario.id}, 0)" 
+                       title="Desactivar">
+                   <i class="bi bi-x-circle"></i>
+               </button>`
+            : `<button class="btn btn-sm btn-outline-success" 
+                       onclick="cambiarEstado(${usuario.id}, 1)" 
+                       title="Activar">
+                   <i class="bi bi-check-circle"></i>
+               </button>`;
         
         html += `
             <tr>
-                <td class="fw-bold">${u.id}</td>
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="user-avatar">${iniciales}</div>
-                        <strong>${u.nombre}</strong>
-                    </div>
-                </td>
-                <td class="d-none d-md-table-cell">${u.email}</td>
-                <td><span class="badge ${badgeRol}">${u.rol.charAt(0).toUpperCase() + u.rol.slice(1)}</span></td>
-                <td class="d-none d-lg-table-cell"><small class="text-muted">${u.sucursal_nombre || 'Todas'}</small></td>
-                <td class="d-none d-lg-table-cell"><small class="text-muted">${formatearFechaHora(u.ultimo_acceso)}</small></td>
+                <td>${index + 1}</td>
+                <td><strong>${escaparHTML(usuario.nombre || '')}</strong></td>
+                <td>${escaparHTML(usuario.email || '-')}</td>
+                <td>${badgeRol}</td>
+                <td>${escaparHTML(usuario.sucursal_nombre || '-')}</td>
                 <td>${badgeEstado}</td>
                 <td class="text-center">
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-info" onclick="verUsuario(${u.id})" title="Ver"><i class="bi bi-eye"></i></button>
-                        <button class="btn btn-warning" onclick="editarUsuario(${u.id})" title="Editar"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-secondary" onclick="resetPassword(${u.id})" title="Reset contraseña"><i class="bi bi-key"></i></button>
-                        ${u.id !== <?php echo $_SESSION['usuario_id'] ?? 0; ?> ? `<button class="btn btn-danger" onclick="desactivarUsuario(${u.id}, '${u.nombre}')" title="Desactivar"><i class="bi bi-trash"></i></button>` : ''}
+                    <div class="btn-group btn-group-sm" role="group">
+                        ${btnVer}
+                        ${btnEditar}
+                        ${btnEstado}
                     </div>
                 </td>
             </tr>
@@ -338,136 +320,63 @@ function renderizarUsuarios() {
     });
     
     tbody.innerHTML = html;
-    document.getElementById('contadorUsuarios').textContent = usuarios.length;
 }
 
-function actualizarEstadisticas() {
-    document.getElementById('statTotal').textContent = usuariosData.length;
-    document.getElementById('statActivos').textContent = usuariosData.filter(u => u.activo).length;
-    document.getElementById('statInactivos').textContent = usuariosData.filter(u => !u.activo).length;
-    document.getElementById('statAdmins').textContent = usuariosData.filter(u => ['administrador', 'dueño'].includes(u.rol)).length;
+function obtenerBadgeRol(rol) {
+    const badges = {
+        'administrador': '<span class="badge bg-danger">Administrador</span>',
+        'dueño': '<span class="badge bg-warning text-dark">Dueño</span>',
+        'vendedor': '<span class="badge bg-primary">Vendedor</span>',
+        'cajero': '<span class="badge bg-success">Cajero</span>',
+        'orfebre': '<span class="badge bg-info">Orfebre</span>',
+        'publicidad': '<span class="badge bg-secondary">Publicidad</span>'
+    };
+    
+    return badges[rol] || `<span class="badge bg-light text-dark">${escaparHTML(rol)}</span>`;
 }
 
-function filtrarUsuarios() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const rol = document.getElementById('filterRol').value;
-    const estado = document.getElementById('filterEstado').value;
+async function cambiarEstado(id, nuevoEstado) {
+    const accion = nuevoEstado == 1 ? 'activar' : 'desactivar';
+    const confirmacion = await confirmarAccion(`¿Estás seguro de ${accion} este usuario?`);
     
-    return usuariosData.filter(u => {
-        const matchSearch = !search || u.nombre.toLowerCase().includes(search) || u.email.toLowerCase().includes(search);
-        const matchRol = !rol || u.rol === rol;
-        const matchEstado = estado === '' || u.activo == estado;
-        return matchSearch && matchRol && matchEstado;
-    });
-}
-
-function aplicarFiltros() { renderizarUsuarios(); }
-
-function limpiarFiltros() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('filterRol').value = '';
-    document.getElementById('filterEstado').value = '';
-    renderizarUsuarios();
-}
-
-function prepararNuevoUsuario() {
-    document.getElementById('tituloModal').innerHTML = '<i class="bi bi-person-plus"></i> Nuevo Usuario';
-    document.getElementById('formUsuario').reset();
-    document.getElementById('usuarioId').value = '';
-    document.getElementById('password').required = true;
-    document.getElementById('passwordGroup').style.display = 'block';
-    document.getElementById('activo').checked = true;
-}
-
-function editarUsuario(id) {
-    const usuario = usuariosData.find(u => u.id === id);
-    if (!usuario) return;
+    if (!confirmacion) return;
     
-    document.getElementById('tituloModal').innerHTML = '<i class="bi bi-pencil"></i> Editar Usuario';
-    document.getElementById('usuarioId').value = usuario.id;
-    document.getElementById('nombre').value = usuario.nombre;
-    document.getElementById('emailUsuario').value = usuario.email;
-    document.getElementById('rol').value = usuario.rol;
-    document.getElementById('sucursal_id').value = usuario.sucursal_id || '';
-    document.getElementById('activo').checked = usuario.activo;
-    document.getElementById('password').required = false;
-    document.getElementById('password').value = '';
-    document.getElementById('passwordGroup').querySelector('small').textContent = 'Dejar en blanco para mantener contraseña actual';
-    
-    new bootstrap.Modal(document.getElementById('modalUsuario')).show();
-}
-
-function guardarUsuario() {
-    const form = document.getElementById('formUsuario');
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-    
-    const formData = new FormData(form);
-    const datos = Object.fromEntries(formData);
-    datos.activo = document.getElementById('activo').checked ? 1 : 0;
-    
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.disabled = true;
-    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-    
-    const esNuevo = !datos.id;
-    
-    /* TODO FASE 5: Descomentar
-    const url = '<?php echo BASE_URL; ?>api/configuracion/usuarios.php';
-    const method = esNuevo ? 'POST' : 'PUT';
-    
-    fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(esNuevo ? 'Usuario creado exitosamente' : 'Usuario actualizado exitosamente');
-            bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
+    try {
+        mostrarCargando();
+        
+        const resultado = await api.cambiarEstadoUsuario(id, nuevoEstado);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            mostrarExito(`Usuario ${accion === 'activar' ? 'activado' : 'desactivado'} correctamente`);
             cargarUsuarios();
         } else {
-            alert(data.message);
+            mostrarError(resultado.message || 'Error al cambiar estado');
         }
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar';
-    });
-    */
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error: ' + error.message);
+    }
+}
+
+function limpiarFiltros() {
+    document.getElementById('inputBuscar').value = '';
+    document.getElementById('selectEstado').value = '';
+    document.getElementById('selectRol').value = '';
+    cargarUsuarios();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarUsuarios();
     
-    setTimeout(() => {
-        alert('MODO DESARROLLO: Usuario ' + (esNuevo ? 'creado' : 'actualizado') + '\n\n' + JSON.stringify(datos, null, 2));
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar';
-        bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
-    }, 1000);
-}
+    document.getElementById('inputBuscar').addEventListener('input', aplicarFiltros);
+    document.getElementById('selectEstado').addEventListener('change', cargarUsuarios);
+    document.getElementById('selectRol').addEventListener('change', cargarUsuarios);
+    document.getElementById('btnLimpiar').addEventListener('click', limpiarFiltros);
+});
 
-function verUsuario(id) { alert('MODO DESARROLLO: Ver usuario #' + id); }
-
-function resetPassword(id) {
-    if (confirm('¿Está seguro de resetear la contraseña de este usuario?\n\nSe enviará una nueva contraseña al email del usuario.')) {
-        alert('MODO DESARROLLO: Reset contraseña usuario #' + id);
-    }
-}
-
-function desactivarUsuario(id, nombre) {
-    if (confirm('¿Está seguro de desactivar al usuario "' + nombre + '"?')) {
-        alert('MODO DESARROLLO: Desactivar usuario #' + id);
-    }
-}
-
-function mostrarMensajeDesarrollo() {
-    document.getElementById('usuariosBody').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">MODO DESARROLLO: Esperando API de usuarios</td></tr>';
-}
-
-function formatearFechaHora(fecha) {
-    if (!fecha) return '-';
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+console.log('✅ Vista de Usuarios cargada correctamente');
 </script>
-
-<?php include '../../includes/footer.php'; ?>

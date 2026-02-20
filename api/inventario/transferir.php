@@ -1,221 +1,351 @@
 <?php
 /**
  * ================================================
- * MÓDULO INVENTARIO - TRANSFERENCIAS
+ * API: TRANSFERIR PRODUCTO ENTRE SUCURSALES
  * ================================================
+ * Endpoint para realizar transferencias de inventario entre sucursales
  * 
- * TODO FASE 5: Conectar con APIs
- * GET /api/inventario/transferencias/lista.php - Listar transferencias
- * GET /api/inventario/productos.php - Listar productos para select
- * GET /api/inventario/stock.php?producto_id={id} - Obtener stock actual
- * POST /api/inventario/transferencias/crear.php - Crear transferencia
+ * Método: POST
+ * Autenticación: Requerida
+ * Permisos: inventario.editar
+ * 
+ * Parámetros POST (FormData):
+ * - producto_id: ID del producto (requerido)
+ * - sucursal_origen: ID sucursal origen (requerido)
+ * - sucursal_destino: ID sucursal destino (requerido)
+ * - cantidad: Cantidad a transferir (requerido)
+ * - motivo: Motivo de la transferencia (requerido)
+ * 
+ * Respuesta exitosa:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "transferencia_id": 15,
+ *     "producto_id": 5,
+ *     "cantidad": 10,
+ *     "stock_origen_anterior": 50,
+ *     "stock_origen_nuevo": 40,
+ *     "stock_destino_anterior": 20,
+ *     "stock_destino_nuevo": 30
+ *   },
+ *   "message": "Transferencia realizada exitosamente"
+ * }
  */
 
 require_once '../../config.php';
 require_once '../../includes/db.php';
-require_once '../../includes/funciones.php';
-require_once '../../includes/auth.php';
+require_once '../../includes/api-helpers.php';
+require_once '../../models/inventario.php';
 
-requiere_autenticacion();
-requiere_rol(['administrador', 'dueño', 'gerente']);
+header('Content-Type: application/json; charset=utf-8');
 
-$titulo_pagina = 'Transferencias de Inventario';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
-?>
+// Verificaciones de seguridad
+verificar_api_autenticacion();
+validar_metodo_http('POST');
+verificar_api_permiso('inventario', 'editar');
 
-<div class="container-fluid main-content">
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>dashboard.php"><i class="bi bi-house"></i> Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="lista.php"><i class="bi bi-box-seam"></i> Inventario</a></li>
-            <li class="breadcrumb-item active">Transferencias</li>
-        </ol>
-    </nav>
-
-    <div class="page-header mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <h1 class="mb-2"><i class="bi bi-arrow-left-right"></i> Transferencias de Inventario</h1>
-                <p class="text-muted mb-0">Movimientos de stock entre sucursales</p>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaTransferencia">
-                    <i class="bi bi-plus-circle"></i> <span class="d-none d-sm-inline">Nueva Transferencia</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Fecha Desde</label>
-                    <input type="date" class="form-control" id="fechaDesde">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Fecha Hasta</label>
-                    <input type="date" class="form-control" id="fechaHasta">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Sucursal Origen</label>
-                    <select class="form-select" id="filterOrigen">
-                        <option value="">Todas</option>
-                        <option value="1">Los Arcos</option>
-                        <option value="2">Chinaca Central</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label d-none d-md-block">&nbsp;</label>
-                    <button class="btn btn-secondary w-100" onclick="aplicarFiltros()">
-                        <i class="bi bi-funnel"></i> <span class="d-md-none">Filtrar</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-header" style="background-color: #1e3a8a; color: white;">
-            <i class="bi bi-table"></i> <span id="tituloTabla">Historial de Transferencias</span>
-        </div>
+try {
+    // Leer JSON del body
+    $json_input = file_get_contents('php://input');
+    $datos_json = json_decode($json_input, true);
+    
+    // Merge con $_POST para compatibilidad
+    if (json_last_error() === JSON_ERROR_NONE && !empty($datos_json)) {
+        $_POST = array_merge($_POST, $datos_json);
+    }
+    
+    // ================================================
+    // VALIDAR CAMPOS REQUERIDOS
+    // ================================================
+    validar_campos_requeridos(['producto_id', 'sucursal_origen', 'sucursal_destino', 'cantidad', 'motivo'], 'POST');
+    
+    $producto_id = obtener_post('producto_id', null, 'int');
+    $sucursal_origen = obtener_post('sucursal_origen', null, 'int');
+    $sucursal_destino = obtener_post('sucursal_destino', null, 'int');
+    $cantidad = obtener_post('cantidad', null, 'int');
+    $motivo = obtener_post('motivo', null, 'string');
+    $usuario_id = $_SESSION['usuario_id'] ?? null;
+    
+    // ================================================
+    // VALIDACIONES DE NEGOCIO
+    // ================================================
+    
+    // Validar que las sucursales sean diferentes
+    if ($sucursal_origen === $sucursal_destino) {
+        responder_json(false, null, 'La sucursal origen y destino deben ser diferentes', 'SUCURSALES_IGUALES');
+    }
+    
+    // Validar cantidad positiva
+    if ($cantidad <= 0) {
+        responder_json(false, null, 'La cantidad debe ser mayor a 0', 'CANTIDAD_INVALIDA');
+    }
+    
+    // Validar que el producto existe
+    if (!db_exists('productos', 'id = ? AND activo = 1', [$producto_id])) {
+        responder_json(false, null, 'El producto no existe o está inactivo', 'PRODUCTO_INVALIDO');
+    }
+    
+    // Validar que ambas sucursales existen
+    if (!db_exists('sucursales', 'id = ? AND activo = 1', [$sucursal_origen])) {
+        responder_json(false, null, 'La sucursal origen no existe o está inactiva', 'SUCURSAL_ORIGEN_INVALIDA');
+    }
+    
+    if (!db_exists('sucursales', 'id = ? AND activo = 1', [$sucursal_destino])) {
+        responder_json(false, null, 'La sucursal destino no existe o está inactiva', 'SUCURSAL_DESTINO_INVALIDA');
+    }
+    
+    // Validar motivo no vacío
+    if (empty(trim($motivo))) {
+        responder_json(false, null, 'El motivo es requerido', 'MOTIVO_REQUERIDO');
+    }
+    
+    // ================================================
+    // OBTENER INVENTARIOS ACTUALES
+    // ================================================
+    
+    $inventario_origen = Inventario::obtenerPorProductoYSucursal($producto_id, $sucursal_origen);
+    $inventario_destino = Inventario::obtenerPorProductoYSucursal($producto_id, $sucursal_destino);
+    
+    if (!$inventario_origen) {
+        responder_json(false, null, 'No hay inventario registrado en la sucursal origen', 'SIN_INVENTARIO_ORIGEN');
+    }
+    
+    $stock_origen_anterior = (int)$inventario_origen['cantidad'];
+    
+    // Validar stock suficiente
+    if ($stock_origen_anterior < $cantidad) {
+        responder_json(
+            false,
+            [
+                'stock_disponible' => $stock_origen_anterior,
+                'cantidad_solicitada' => $cantidad
+            ],
+            "Stock insuficiente en sucursal origen. Disponible: {$stock_origen_anterior}, solicitado: {$cantidad}",
+            'STOCK_INSUFICIENTE'
+        );
+    }
+    
+    // Si no existe inventario en destino, obtener valores por defecto
+    $stock_destino_anterior = 0;
+    $stock_minimo_destino = 5;
+    
+    if ($inventario_destino) {
+        $stock_destino_anterior = (int)$inventario_destino['cantidad'];
+        $stock_minimo_destino = (int)$inventario_destino['stock_minimo'];
+    }
+    
+    // ================================================
+    // INICIAR TRANSACCIÓN
+    // ================================================
+    
+    global $pdo;
+    $pdo->beginTransaction();
+    
+    try {
+        // ================================================
+        // 1. CREAR TRANSFERENCIA PRINCIPAL
+        // ================================================
         
-        <div id="loadingTable" class="text-center py-5">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-            <p class="mt-3 text-muted">Cargando transferencias...</p>
-        </div>
-
-        <div id="tableContainer" class="table-responsive" style="display: none;">
-            <table class="table table-hover mb-0">
-                <thead style="background-color: #1e3a8a; color: white;">
-                    <tr>
-                        <th class="d-none d-xl-table-cell">#</th>
-                        <th>Fecha</th>
-                        <th>Producto</th>
-                        <th>Cant.</th>
-                        <th class="d-none d-md-table-cell">Origen</th>
-                        <th class="d-none d-md-table-cell">Destino</th>
-                        <th class="d-none d-lg-table-cell">Usuario</th>
-                        <th>Estado</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="transferenciasBody"></tbody>
-            </table>
-        </div>
-
-        <div id="noResults" class="text-center py-5" style="display: none;">
-            <i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-            <p class="mt-3 text-muted">No se encontraron transferencias</p>
-        </div>
-
-        <div class="card-footer" id="tableFooter" style="display: none;">
-            <small class="text-muted" id="contadorTransferencias">Mostrando 0 transferencias</small>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalNuevaTransferencia" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: #1e3a8a; color: white;">
-                <h5 class="modal-title"><i class="bi bi-arrow-left-right"></i> Nueva Transferencia</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formTransferencia">
-                    <div class="mb-3">
-                        <label for="producto_id" class="form-label"><i class="bi bi-box-seam"></i> Producto *</label>
-                        <select class="form-select" id="producto_id" name="producto_id" required>
-                            <option value="">Seleccione un producto...</option>
-                        </select>
-                    </div>
-
-                    <div class="alert alert-info" id="infoStock" style="display: none;">
-                        <strong>Stock Disponible:</strong>
-                        <div class="row mt-2">
-                            <div class="col-6"><i class="bi bi-building"></i> Los Arcos: <span id="stock-los-arcos" class="fw-bold">0</span></div>
-                            <div class="col-6"><i class="bi bi-building"></i> Chinaca: <span id="stock-chinaca" class="fw-bold">0</span></div>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label for="sucursal_origen" class="form-label"><i class="bi bi-arrow-right"></i> Sucursal Origen *</label>
-                            <select class="form-select" id="sucursal_origen" name="sucursal_origen" required>
-                                <option value="">Seleccione...</option>
-                                <option value="1">Los Arcos</option>
-                                <option value="2">Chinaca Central</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="sucursal_destino" class="form-label"><i class="bi bi-arrow-left"></i> Sucursal Destino *</label>
-                            <select class="form-select" id="sucursal_destino" name="sucursal_destino" required>
-                                <option value="">Seleccione...</option>
-                                <option value="1">Los Arcos</option>
-                                <option value="2">Chinaca Central</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="cantidad" class="form-label"><i class="bi bi-123"></i> Cantidad a Transferir *</label>
-                        <input type="number" class="form-control" id="cantidad" name="cantidad" min="1" required placeholder="Ingrese la cantidad">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="notas" class="form-label"><i class="bi bi-chat-left-text"></i> Notas (opcional)</label>
-                        <textarea class="form-control" id="notas" name="notas" rows="2" placeholder="Motivo o comentarios"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle"></i> Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnTransferir" onclick="procesarTransferencia()">
-                    <i class="bi bi-arrow-left-right"></i> Realizar Transferencia
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-table thead th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; padding: 12px; }
-table tbody td { padding: 12px; vertical-align: middle; }
-.badge { padding: 0.35em 0.65em; font-size: 0.85em; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    table { font-size: 0.85rem; }
-    table thead th, table tbody td { padding: 8px 6px; }
+        $sql_transferencia = "INSERT INTO transferencias_inventario (
+            sucursal_origen_id,
+            sucursal_destino_id,
+            usuario_id,
+            estado,
+            observaciones,
+            fecha_completado
+        ) VALUES (?, ?, ?, 'completada', ?, NOW())";
+        
+        $stmt_trans = $pdo->prepare($sql_transferencia);
+        $stmt_trans->execute([
+            $sucursal_origen,
+            $sucursal_destino,
+            $usuario_id,
+            $motivo
+        ]);
+        
+        $transferencia_id = $pdo->lastInsertId();
+        
+        // ================================================
+        // 2. CREAR DETALLE DE TRANSFERENCIA
+        // ================================================
+        
+        $sql_detalle = "INSERT INTO detalle_transferencias_inventario (
+            transferencia_id,
+            producto_id,
+            cantidad
+        ) VALUES (?, ?, ?)";
+        
+        $stmt_detalle = $pdo->prepare($sql_detalle);
+        $stmt_detalle->execute([
+            $transferencia_id,
+            $producto_id,
+            $cantidad
+        ]);
+        
+        // ================================================
+        // 3. ACTUALIZAR STOCK EN SUCURSAL ORIGEN (RESTAR)
+        // ================================================
+        
+        $stock_origen_nuevo = $stock_origen_anterior - $cantidad;
+        
+        $sql_update_origen = "UPDATE inventario 
+                             SET cantidad = ?,
+                                 fecha_actualizacion = NOW()
+                             WHERE producto_id = ? AND sucursal_id = ?";
+        
+        $stmt_origen = $pdo->prepare($sql_update_origen);
+        $stmt_origen->execute([
+            $stock_origen_nuevo,
+            $producto_id,
+            $sucursal_origen
+        ]);
+        
+        // ================================================
+        // 4. ACTUALIZAR STOCK EN SUCURSAL DESTINO (SUMAR)
+        // ================================================
+        
+        $stock_destino_nuevo = $stock_destino_anterior + $cantidad;
+        
+        if ($inventario_destino) {
+            // Actualizar existente
+            $sql_update_destino = "UPDATE inventario 
+                                  SET cantidad = ?,
+                                      fecha_actualizacion = NOW()
+                                  WHERE producto_id = ? AND sucursal_id = ?";
+            
+            $stmt_destino = $pdo->prepare($sql_update_destino);
+            $stmt_destino->execute([
+                $stock_destino_nuevo,
+                $producto_id,
+                $sucursal_destino
+            ]);
+        } else {
+            // Crear nuevo registro
+            $sql_insert_destino = "INSERT INTO inventario (
+                producto_id,
+                sucursal_id,
+                cantidad,
+                stock_minimo,
+                es_compartido
+            ) VALUES (?, ?, ?, ?, 0)";
+            
+            $stmt_destino = $pdo->prepare($sql_insert_destino);
+            $stmt_destino->execute([
+                $producto_id,
+                $sucursal_destino,
+                $stock_destino_nuevo,
+                $stock_minimo_destino
+            ]);
+        }
+        
+        // ================================================
+        // 5. REGISTRAR MOVIMIENTO EN ORIGEN (SALIDA)
+        // ================================================
+        
+        $sql_mov_origen = "INSERT INTO movimientos_inventario (
+            producto_id,
+            sucursal_id,
+            tipo_movimiento,
+            cantidad,
+            cantidad_anterior,
+            cantidad_nueva,
+            motivo,
+            usuario_id,
+            referencia_tipo,
+            referencia_id,
+            fecha_hora
+        ) VALUES (?, ?, 'transferencia', ?, ?, ?, ?, ?, 'transferencia', ?, NOW())";
+        
+        $stmt_mov_origen = $pdo->prepare($sql_mov_origen);
+        $stmt_mov_origen->execute([
+            $producto_id,
+            $sucursal_origen,
+            $cantidad,
+            $stock_origen_anterior,
+            $stock_origen_nuevo,
+            "Transferencia a sucursal {$sucursal_destino}",
+            $usuario_id,
+            $transferencia_id
+        ]);
+        
+        // ================================================
+        // 6. REGISTRAR MOVIMIENTO EN DESTINO (ENTRADA)
+        // ================================================
+        
+        $sql_mov_destino = "INSERT INTO movimientos_inventario (
+            producto_id,
+            sucursal_id,
+            tipo_movimiento,
+            cantidad,
+            cantidad_anterior,
+            cantidad_nueva,
+            motivo,
+            usuario_id,
+            referencia_tipo,
+            referencia_id,
+            fecha_hora
+        ) VALUES (?, ?, 'transferencia', ?, ?, ?, ?, ?, 'transferencia', ?, NOW())";
+        
+        $stmt_mov_destino = $pdo->prepare($sql_mov_destino);
+        $stmt_mov_destino->execute([
+            $producto_id,
+            $sucursal_destino,
+            $cantidad,
+            $stock_destino_anterior,
+            $stock_destino_nuevo,
+            "Transferencia desde sucursal {$sucursal_origen}",
+            $usuario_id,
+            $transferencia_id
+        ]);
+        
+        // ================================================
+        // 7. REGISTRAR AUDITORÍA
+        // ================================================
+        
+        registrar_auditoria(
+            'INSERT',
+            'transferencias_inventario',
+            $transferencia_id,
+            "Transferencia de {$cantidad} unidades - Producto ID: {$producto_id} - Sucursal {$sucursal_origen} → {$sucursal_destino}"
+        );
+        
+        // ================================================
+        // COMMIT TRANSACCIÓN
+        // ================================================
+        
+        $pdo->commit();
+        
+        // ================================================
+        // RESPUESTA EXITOSA
+        // ================================================
+        
+        responder_json(
+            true,
+            [
+                'transferencia_id' => $transferencia_id,
+                'producto_id' => $producto_id,
+                'cantidad' => $cantidad,
+                'sucursal_origen' => $sucursal_origen,
+                'sucursal_destino' => $sucursal_destino,
+                'stock_origen_anterior' => $stock_origen_anterior,
+                'stock_origen_nuevo' => $stock_origen_nuevo,
+                'stock_destino_anterior' => $stock_destino_anterior,
+                'stock_destino_nuevo' => $stock_destino_nuevo
+            ],
+            'Transferencia realizada exitosamente',
+            'TRANSFERENCIA_EXITOSA'
+        );
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+    
+} catch (Exception $e) {
+    responder_json(
+        false,
+        ['error_detalle' => $e->getMessage()],
+        'Error al realizar transferencia: ' . $e->getMessage(),
+        'ERROR_TRANSFERENCIA'
+    );
 }
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select { min-height: 44px; } }
-</style>
-
-<!-- Scripts específicos del módulo -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/api-helper.js"></script>
-<script src="<?php echo BASE_URL; ?>assets/js/inventario.js"></script>
-
-<script>
-// Inicializar módulo de transferencias
-document.addEventListener('DOMContentLoaded', function() {
-    Inventario.transferencias.init();
-});
-
-// Función global para el botón del modal
-function procesarTransferencia() {
-    const form = document.getElementById('formTransferencia');
-    const event = new Event('submit', { cancelable: true });
-    form.dispatchEvent(event);
-}
-</script>
-
-<?php include '../../includes/footer.php'; ?>

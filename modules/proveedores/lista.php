@@ -3,12 +3,6 @@
  * ================================================
  * MÓDULO PROVEEDORES - LISTA
  * ================================================
- * 
- * TODO FASE 5: Conectar con API
- * GET /api/proveedores/lista.php
- * 
- * Parámetros: buscar, estado, productos
- * Respuesta: { success, data: [...proveedores], resumen: {...stats} }
  */
 
 require_once '../../config.php';
@@ -17,243 +11,365 @@ require_once '../../includes/funciones.php';
 require_once '../../includes/auth.php';
 
 requiere_autenticacion();
+requiere_rol(['administrador', 'dueño', 'vendedor']);
 
-$titulo_pagina = 'Proveedores';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+// Incluir header y navbar
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <div class="page-header mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <h1 class="mb-2"><i class="bi bi-truck"></i> Proveedores</h1>
-                <p class="text-muted mb-0">Gestión de proveedores y suministros</p>
+<!-- Contenedor Principal -->
+<div class="container-fluid px-4 py-4">
+    
+    <!-- Header con Título y Botón -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-truck"></i> Proveedores
+            </h2>
+            <p class="text-muted mb-0">Gestión de proveedores y suministros</p>
+        </div>
+        <a href="agregar.php" class="btn btn-warning btn-lg">
+            <i class="bi bi-plus-circle"></i> Nuevo Proveedor
+        </a>
+    </div>
+
+    <!-- Línea Separadora Dorada -->
+    <hr class="border-warning border-2 opacity-75 mb-4">
+
+    <!-- Cards de Estadísticas -->
+    <div class="row g-3 mb-4">
+        <!-- Total Proveedores -->
+        <div class="col-md-3">
+            <div class="card border-start border-secondary border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-building fs-2 text-secondary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="totalProveedores">0</h3>
+                            <p class="text-muted mb-0">Total Proveedores</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6 text-md-end">
-                <?php if (tiene_permiso('proveedores', 'crear')): ?>
-                <a href="agregar.php" class="btn btn-primary btn-lg">
-                    <i class="bi bi-plus-circle"></i> <span class="d-none d-sm-inline">Nuevo Proveedor</span>
-                </a>
-                <?php endif; ?>
+        </div>
+
+        <!-- Activos -->
+        <div class="col-md-3">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-check-circle fs-2 text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="proveedoresActivos">0</h3>
+                            <p class="text-muted mb-0">Activos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactivos -->
+        <div class="col-md-3">
+            <div class="card border-start border-danger border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-x-circle fs-2 text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="proveedoresInactivos">0</h3>
+                            <p class="text-muted mb-0">Inactivos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compras Totales -->
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-cart-check fs-2 text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="comprasTotales">0</h3>
+                            <p class="text-muted mb-0">Compras Totales</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-3 mb-4" id="estadisticas">
-        <div class="col-6 col-md-3">
-            <div class="stat-card azul">
-                <div class="stat-icon"><i class="bi bi-building"></i></div>
-                <div class="stat-value" id="statTotal">0</div>
-                <div class="stat-label">Total Proveedores</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card verde">
-                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
-                <div class="stat-value" id="statActivos">0</div>
-                <div class="stat-label">Activos</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card rojo">
-                <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
-                <div class="stat-value" id="statInactivos">0</div>
-                <div class="stat-label">Inactivos</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="stat-card dorado">
-                <div class="stat-icon"><i class="bi bi-cart"></i></div>
-                <div class="stat-value" id="statCompras">0</div>
-                <div class="stat-label">Compras Totales</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm">
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="row g-3">
+                <!-- Búsqueda -->
                 <div class="col-md-4">
                     <label class="form-label">Buscar</label>
                     <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="searchInput" placeholder="Nombre, empresa...">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="inputBuscar" 
+                               placeholder="Nombre, empresa...">
                     </div>
                 </div>
+
+                <!-- Estado -->
                 <div class="col-md-3">
                     <label class="form-label">Estado</label>
-                    <select class="form-select" id="filterEstado">
+                    <select class="form-select" id="selectEstado">
                         <option value="">Todos</option>
-                        <option value="1">Activos</option>
+                        <option value="1" selected>Activos</option>
                         <option value="0">Inactivos</option>
                     </select>
                 </div>
+
+                <!-- Productos -->
                 <div class="col-md-3">
                     <label class="form-label">Productos</label>
-                    <input type="text" class="form-control" id="filterProductos" placeholder="Ej: oro, plata...">
+                    <input type="text" class="form-control" id="inputProductos" 
+                           placeholder="Ej: oro, plata...">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label d-none d-md-block">&nbsp;</label>
-                    <button class="btn btn-secondary w-100" onclick="limpiarFiltros()">
-                        <i class="bi bi-x-circle"></i> <span class="d-md-none">Limpiar</span>
+
+                <!-- Botón Limpiar -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" id="btnLimpiar">
+                        <i class="bi bi-x-circle"></i> Limpiar
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Tabla de Proveedores -->
     <div class="card shadow-sm">
-        <div class="card-header" style="background-color: #1e3a8a; color: white;">
-            <i class="bi bi-table"></i> <span id="tituloTabla">Listado de Proveedores</span>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-table"></i> Listado de Proveedores
+            </h5>
         </div>
-        
-        <div id="loadingTable" class="text-center py-5">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-            <p class="mt-3 text-muted">Cargando proveedores...</p>
-        </div>
-
-        <div id="tableContainer" class="table-responsive" style="display: none;">
-            <table class="table table-hover mb-0">
-                <thead style="background-color: #1e3a8a; color: white;">
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre / Empresa</th>
-                        <th class="d-none d-md-table-cell">Contacto</th>
-                        <th class="d-none d-lg-table-cell">Productos Suministra</th>
-                        <th class="d-none d-xl-table-cell">Compras</th>
-                        <th>Estado</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="proveedoresBody"></tbody>
-            </table>
-        </div>
-
-        <div id="noResults" class="text-center py-5" style="display: none;">
-            <i class="bi bi-inbox" style="font-size: 48px; opacity: 0.3;"></i>
-            <p class="mt-3 text-muted">No se encontraron proveedores</p>
-        </div>
-
-        <div class="card-footer" id="tableFooter" style="display: none;">
-            <small class="text-muted" id="contadorProveedores">Mostrando 0 proveedores</small>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tablaProveedores">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="25%">Nombre</th>
+                            <th width="18%">Empresa</th>
+                            <th width="15%">Contacto</th>
+                            <th width="12%">Teléfono</th>
+                            <th width="18%">Productos Suministra</th>
+                            <th width="8%">Estado</th>
+                            <th width="4%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaProveedoresBody">
+                        <!-- Los datos se cargan con JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
 </div>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.stat-card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); transition: transform 0.2s ease; border-left: 4px solid; height: 100%; }
-.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); }
-.stat-card.azul { border-left-color: #1e3a8a; }
-.stat-card.verde { border-left-color: #22c55e; }
-.stat-card.rojo { border-left-color: #ef4444; }
-.stat-card.dorado { border-left-color: #d4af37; }
-.stat-icon { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 12px; }
-.stat-card.azul .stat-icon { background: rgba(30, 58, 138, 0.1); color: #1e3a8a; }
-.stat-card.verde .stat-icon { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
-.stat-card.rojo .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
-.stat-card.dorado .stat-icon { background: rgba(212, 175, 55, 0.1); color: #d4af37; }
-.stat-value { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin: 8px 0; }
-.stat-label { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
-table thead th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; padding: 12px; }
-table tbody td { padding: 12px; vertical-align: middle; }
-.badge { padding: 0.35em 0.65em; font-size: 0.85em; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .stat-card { padding: 12px; }
-    .stat-icon { width: 38px; height: 38px; font-size: 18px; margin-bottom: 8px; }
-    .stat-value { font-size: 1.25rem; }
-    table { font-size: 0.85rem; }
-    table thead th, table tbody td { padding: 8px 6px; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select { min-height: 44px; } }
-</style>
+<?php require_once '../../includes/footer.php'; ?>
+
+<!-- Scripts -->
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    cargarProveedores();
-    
-    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
-    document.getElementById('filterEstado').addEventListener('change', aplicarFiltros);
-    document.getElementById('filterProductos').addEventListener('input', aplicarFiltros);
-});
+// ============================================================================
+// VARIABLES GLOBALES
+// ============================================================================
+let proveedoresData = []; // Almacena todos los proveedores
+let proveedoresFiltrados = []; // Almacena proveedores después de filtrar
 
-function cargarProveedores() {
-    /* TODO FASE 5: Descomentar
-    const params = new URLSearchParams({
-        buscar: document.getElementById('searchInput').value,
-        estado: document.getElementById('filterEstado').value,
-        productos: document.getElementById('filterProductos').value
-    });
-    
-    fetch('<?php echo BASE_URL; ?>api/proveedores/lista.php?' + params)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                renderizarProveedores(data.data);
-                actualizarEstadisticas(data.resumen);
-            } else {
-                mostrarError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarError('Error al cargar los proveedores');
-        });
-    */
-    
-    setTimeout(() => {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
-        document.getElementById('noResults').innerHTML = '<i class="bi bi-database" style="font-size: 48px; opacity: 0.3;"></i><p class="mt-3 text-muted">MODO DESARROLLO: Esperando API</p>';
-    }, 1500);
+// ============================================================================
+// FUNCIONES PRINCIPALES
+// ============================================================================
+
+/**
+ * Cargar proveedores desde la API
+ */
+async function cargarProveedores() {
+    try {
+        mostrarCargando();
+        
+        // Obtener filtro de estado
+        const estado = document.getElementById('selectEstado').value;
+        const filtros = {};
+        
+        if (estado !== '') {
+            filtros.activo = estado;
+        }
+        
+        // Llamar a la API
+        const resultado = await api.listarProveedores(filtros);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            proveedoresData = resultado.data || [];
+            proveedoresFiltrados = [...proveedoresData];
+            
+            actualizarEstadisticas();
+            aplicarFiltros();
+        } else {
+            mostrarError('No se pudieron cargar los proveedores');
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error al cargar proveedores:', error);
+        mostrarError('Error al cargar proveedores: ' + error.message);
+        
+        // Mostrar tabla vacía
+        mostrarMensajeVacio('tablaProveedores', 'Error al cargar datos', 8);
+    }
 }
 
-function renderizarProveedores(proveedores) {
-    const tbody = document.getElementById('proveedoresBody');
+/**
+ * Actualizar estadísticas en los cards
+ */
+function actualizarEstadisticas() {
+    const total = proveedoresData.length;
+    const activos = proveedoresData.filter(p => p.activo == 1).length;
+    const inactivos = total - activos;
     
-    if (proveedores.length === 0) {
-        document.getElementById('loadingTable').style.display = 'none';
-        document.getElementById('noResults').style.display = 'block';
+    document.getElementById('totalProveedores').textContent = formatearNumero(total);
+    document.getElementById('proveedoresActivos').textContent = formatearNumero(activos);
+    document.getElementById('proveedoresInactivos').textContent = formatearNumero(inactivos);
+    
+    // Compras totales (placeholder por ahora)
+    document.getElementById('comprasTotales').textContent = '0';
+}
+
+/**
+ * Aplicar filtros a los proveedores
+ */
+function aplicarFiltros() {
+    const buscar = document.getElementById('inputBuscar').value.toLowerCase().trim();
+    const productos = document.getElementById('inputProductos').value.toLowerCase().trim();
+    
+    proveedoresFiltrados = proveedoresData.filter(proveedor => {
+        // Filtro de búsqueda (nombre o empresa)
+        if (buscar) {
+            const nombre = (proveedor.nombre || '').toLowerCase();
+            const empresa = (proveedor.empresa || '').toLowerCase();
+            const contacto = (proveedor.contacto || '').toLowerCase();
+            
+            if (!nombre.includes(buscar) && !empresa.includes(buscar) && !contacto.includes(buscar)) {
+                return false;
+            }
+        }
+        
+        // Filtro de productos
+        if (productos) {
+            const productosSuministra = (proveedor.productos_suministra || '').toLowerCase();
+            if (!productosSuministra.includes(productos)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    mostrarProveedores();
+}
+
+/**
+ * Mostrar proveedores en la tabla
+ */
+function mostrarProveedores() {
+    const tbody = document.getElementById('tablaProveedoresBody');
+    
+    if (proveedoresFiltrados.length === 0) {
+        mostrarMensajeVacio('tablaProveedores', 'No hay proveedores para mostrar', 7);
         return;
     }
     
+    // Obtener rol del usuario desde sesión PHP
+    const rolUsuario = '<?php echo $_SESSION["usuario_rol"] ?? ""; ?>';
+    const puedeEditar = ['administrador', 'dueño'].includes(rolUsuario);
+    
     let html = '';
-    proveedores.forEach(p => {
-        const badgeEstado = p.activo ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-secondary">Inactivo</span>';
-        const productos = p.productos_suministra || '-';
-        const productosCorto = productos.length > 50 ? productos.substring(0, 50) + '...' : productos;
+    
+    proveedoresFiltrados.forEach(proveedor => {
+        const badgeEstado = proveedor.activo == 1 
+            ? '<span class="badge bg-success">Activo</span>'
+            : '<span class="badge bg-secondary">Inactivo</span>';
+        
+        // Botón VER (para todos los usuarios)
+        const btnVer = `
+            <a href="ver.php?id=${proveedor.id}" 
+               class="btn btn-sm btn-outline-info" 
+               title="Ver Detalles">
+                <i class="bi bi-eye"></i>
+            </a>
+        `;
+        
+        // Botones EDITAR y ESTADO (solo para admin y dueño)
+        let botonesAdmin = '';
+        if (puedeEditar) {
+            const btnEditar = `
+                <a href="editar.php?id=${proveedor.id}" 
+                   class="btn btn-sm btn-outline-warning" 
+                   title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </a>
+            `;
+            
+            const btnEstado = proveedor.activo == 1
+                ? `<button class="btn btn-sm btn-outline-danger" 
+                           onclick="cambiarEstado(${proveedor.id}, 0)" 
+                           title="Desactivar">
+                       <i class="bi bi-x-circle"></i>
+                   </button>`
+                : `<button class="btn btn-sm btn-outline-success" 
+                           onclick="cambiarEstado(${proveedor.id}, 1)" 
+                           title="Activar">
+                       <i class="bi bi-check-circle"></i>
+                   </button>`;
+            
+            botonesAdmin = btnEditar + ' ' + btnEstado;
+        }
         
         html += `
             <tr>
-                <td class="fw-bold">${p.id}</td>
+                <td><strong>${escaparHTML(proveedor.nombre || '')}</strong></td>
+                <td>${escaparHTML(proveedor.empresa || '-')}</td>
+                <td>${escaparHTML(proveedor.contacto || '-')}</td>
+                <td>${escaparHTML(proveedor.telefono || '-')}</td>
                 <td>
-                    <div class="fw-bold">${p.nombre}</div>
-                    ${p.empresa ? `<small class="text-muted">${p.empresa}</small>` : ''}
+                    <small class="text-muted">
+                        ${escaparHTML(proveedor.productos_suministra || '-')}
+                    </small>
                 </td>
-                <td class="d-none d-md-table-cell">
-                    ${p.telefono ? `<div><i class="bi bi-phone"></i> ${p.telefono}</div>` : ''}
-                    ${p.email ? `<div><i class="bi bi-envelope"></i> <small>${p.email}</small></div>` : ''}
-                    ${!p.telefono && !p.email ? '<small class="text-muted">Sin contacto</small>' : ''}
-                </td>
-                <td class="d-none d-lg-table-cell"><small class="text-muted">${productosCorto}</small></td>
-                <td class="d-none d-xl-table-cell"><span class="badge bg-info">${p.total_compras || 0}</span></td>
                 <td>${badgeEstado}</td>
                 <td class="text-center">
-                    <div class="btn-group">
-                        <a href="ver.php?id=${p.id}" class="btn btn-sm btn-info" title="Ver"><i class="bi bi-eye"></i></a>
-                        <?php if (tiene_permiso('proveedores', 'editar')): ?>
-                        <a href="editar.php?id=${p.id}" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil"></i></a>
-                        <?php endif; ?>
-                        <?php if (tiene_permiso('proveedores', 'eliminar')): ?>
-                        <button class="btn btn-sm btn-danger" onclick="desactivarProveedor(${p.id})" title="Desactivar"><i class="bi bi-trash"></i></button>
-                        <?php endif; ?>
+                    <div class="btn-group btn-group-sm" role="group">
+                        ${btnVer}
+                        ${botonesAdmin}
                     </div>
                 </td>
             </tr>
@@ -261,40 +377,75 @@ function renderizarProveedores(proveedores) {
     });
     
     tbody.innerHTML = html;
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('tableContainer').style.display = 'block';
-    document.getElementById('tableFooter').style.display = 'block';
-    document.getElementById('contadorProveedores').textContent = `Mostrando ${proveedores.length} proveedores`;
-    document.getElementById('tituloTabla').textContent = `Listado de Proveedores (${proveedores.length})`;
 }
 
-function actualizarEstadisticas(resumen) {
-    document.getElementById('statTotal').textContent = resumen.total || 0;
-    document.getElementById('statActivos').textContent = resumen.activos || 0;
-    document.getElementById('statInactivos').textContent = resumen.inactivos || 0;
-    document.getElementById('statCompras').textContent = resumen.total_compras || 0;
-}
-
-function aplicarFiltros() { cargarProveedores(); }
-
-function limpiarFiltros() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('filterEstado').value = '';
-    document.getElementById('filterProductos').value = '';
-    cargarProveedores();
-}
-
-function desactivarProveedor(id) {
-    if (confirm('¿Está seguro de desactivar este proveedor?')) {
-        alert('MODO DESARROLLO: Desactivar proveedor #' + id);
+/**
+ * Cambiar estado de proveedor (activar/desactivar)
+ */
+async function cambiarEstado(id, nuevoEstado) {
+    const accion = nuevoEstado == 1 ? 'activar' : 'desactivar';
+    const confirmacion = await confirmarAccion(
+        `¿Estás seguro de ${accion} este proveedor?`,
+        `Confirmar ${accion}`
+    );
+    
+    if (!confirmacion) return;
+    
+    try {
+        mostrarCargando();
+        
+        const resultado = await api.cambiarEstadoProveedor(id, nuevoEstado);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            mostrarExito(`Proveedor ${accion === 'activar' ? 'activado' : 'desactivado'} correctamente`);
+            cargarProveedores(); // Recargar lista
+        } else {
+            mostrarError(resultado.message || 'Error al cambiar estado');
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error al cambiar estado:', error);
+        mostrarError('Error al cambiar estado: ' + error.message);
     }
 }
 
-function mostrarError(mensaje) {
-    document.getElementById('loadingTable').style.display = 'none';
-    document.getElementById('noResults').style.display = 'block';
-    document.getElementById('noResults').innerHTML = `<i class="bi bi-exclamation-triangle text-danger" style="font-size: 48px;"></i><p class="mt-3 text-danger">${mensaje}</p>`;
+/**
+ * Limpiar todos los filtros
+ */
+function limpiarFiltros() {
+    document.getElementById('inputBuscar').value = '';
+    document.getElementById('selectEstado').value = '1'; // Activos por defecto
+    document.getElementById('inputProductos').value = '';
+    
+    cargarProveedores();
 }
-</script>
 
-<?php include '../../includes/footer.php'; ?>
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar proveedores al iniciar
+    cargarProveedores();
+    
+    // Búsqueda en tiempo real
+    document.getElementById('inputBuscar').addEventListener('input', aplicarFiltros);
+    
+    // Filtro de productos
+    document.getElementById('inputProductos').addEventListener('input', aplicarFiltros);
+    
+    // Cambio de estado (select)
+    document.getElementById('selectEstado').addEventListener('change', cargarProveedores);
+    
+    // Botón limpiar
+    document.getElementById('btnLimpiar').addEventListener('click', limpiarFiltros);
+});
+
+// ============================================================================
+// LOG DE INICIALIZACIÓN
+// ============================================================================
+console.log('✅ Vista de Proveedores cargada correctamente');
+</script>

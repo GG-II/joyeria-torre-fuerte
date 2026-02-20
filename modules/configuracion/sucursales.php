@@ -1,16 +1,8 @@
 <?php
 /**
  * ================================================
- * MÓDULO CONFIGURACIÓN - GESTIÓN DE SUCURSALES
+ * MÓDULO SUCURSALES - LISTA
  * ================================================
- * 
- * TODO FASE 5: Conectar con API
- * GET /api/configuracion/sucursales.php - Listar sucursales
- * POST /api/configuracion/sucursales.php - Crear sucursal
- * PUT /api/configuracion/sucursales.php - Actualizar sucursal
- * 
- * Tabla BD: sucursales
- * Campos: id, nombre, direccion, telefono, email, responsable_id, activo, fecha_creacion
  */
 
 require_once '../../config.php';
@@ -21,355 +13,342 @@ require_once '../../includes/auth.php';
 requiere_autenticacion();
 requiere_rol(['administrador', 'dueño']);
 
-$titulo_pagina = 'Gestión de Sucursales';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <div class="page-header mb-4">
-        <div class="row align-items-center g-3">
-            <div class="col-md-6">
-                <h1 class="mb-2"><i class="bi bi-building"></i> Gestión de Sucursales</h1>
-                <p class="text-muted mb-0">Administración de sucursales</p>
-            </div>
-            <div class="col-md-6 text-md-end">
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSucursal" onclick="prepararNuevaSucursal()">
-                    <i class="bi bi-plus-circle"></i> Nueva Sucursal
-                </button>
-            </div>
+<div class="container-fluid px-4 py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-building"></i> Gestión de Sucursales
+            </h2>
+            <p class="text-muted mb-0">Administración de sucursales</p>
         </div>
+        <a href="agregar.php" class="btn btn-warning btn-lg">
+            <i class="bi bi-plus-circle"></i> Nueva Sucursal
+        </a>
     </div>
 
-    <div id="loadingState" class="text-center py-5">
-        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 text-muted">Cargando sucursales...</p>
-    </div>
+    <hr class="border-warning border-2 opacity-75 mb-4">
 
-    <div id="mainContent" style="display: none;">
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="stat-card azul">
-                    <div class="stat-icon"><i class="bi bi-building"></i></div>
-                    <div class="stat-value" id="statTotal">0</div>
-                    <div class="stat-label">Total Sucursales</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card verde">
-                    <div class="stat-icon"><i class="bi bi-people"></i></div>
-                    <div class="stat-value" id="statUsuarios">0</div>
-                    <div class="stat-label">Total Usuarios</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-card dorado">
-                    <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
-                    <div class="stat-value" id="statProductos">0</div>
-                    <div class="stat-label">Productos en Inventario</div>
+    <!-- Cards de Estadísticas -->
+    <div class="row g-3 mb-4">
+        <!-- Total -->
+        <div class="col-md-4">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-building fs-2 text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="totalSucursales">0</h3>
+                            <p class="text-muted mb-0">Total Sucursales</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-3" id="sucursalesContainer">
-            <div class="col-12 text-center py-5 text-muted">
-                <i class="bi bi-building" style="font-size: 48px;"></i>
-                <p class="mt-2">Sin sucursales registradas</p>
+        <!-- Activas -->
+        <div class="col-md-4">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-check-circle fs-2 text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="sucursalesActivas">0</h3>
+                            <p class="text-muted mb-0">Activas</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inactivas -->
+        <div class="col-md-4">
+            <div class="card border-start border-danger border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-light rounded-3 p-3">
+                                <i class="bi bi-x-circle fs-2 text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0" id="sucursalesInactivas">0</h3>
+                            <p class="text-muted mb-0">Inactivas</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Búsqueda -->
+                <div class="col-md-8">
+                    <label class="form-label">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="inputBuscar" 
+                               placeholder="Nombre, dirección...">
+                    </div>
+                </div>
+
+                <!-- Estado -->
+                <div class="col-md-2">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" id="selectEstado">
+                        <option value="" selected>Todos</option>
+                        <option value="1">Activos</option>
+                        <option value="0">Inactivos</option>
+                    </select>
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" id="btnLimpiar">
+                        <i class="bi bi-x-circle"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-table"></i> Listado de Sucursales
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tablaSucursales">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="25%">Nombre</th>
+                            <th width="30%">Dirección</th>
+                            <th width="12%">Teléfono</th>
+                            <th width="18%">Email</th>
+                            <th width="8%">Estado</th>
+                            <th width="7%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaSucursalesBody">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="modal fade" id="modalSucursal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: #1e3a8a; color: white;">
-                <h5 class="modal-title" id="tituloModal">
-                    <i class="bi bi-building"></i> Nueva Sucursal
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="formSucursal">
-                    <input type="hidden" name="id" id="sucursalId">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nombre de la Sucursal *</label>
-                            <input type="text" class="form-control" name="nombre" id="nombre" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Responsable</label>
-                            <select class="form-select" name="responsable_id" id="responsable_id">
-                                <option value="">Sin responsable</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mb-3 mt-3">
-                        <label class="form-label">Dirección *</label>
-                        <textarea class="form-control" name="direccion" id="direccion" rows="2" required></textarea>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Teléfono</label>
-                            <input type="tel" class="form-control" name="telefono" id="telefono">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" name="email" id="emailSucursal">
-                        </div>
-                    </div>
-                    <div class="form-check mt-3">
-                        <input class="form-check-input" type="checkbox" name="activo" id="activo" checked>
-                        <label class="form-check-label">Sucursal activa</label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnGuardar" onclick="guardarSucursal()">
-                    <i class="bi bi-save"></i> Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<?php require_once '../../includes/footer.php'; ?>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.stat-card { background: linear-gradient(135deg, var(--card-color-start) 0%, var(--card-color-end) 100%); border-radius: 12px; padding: 20px; color: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); transition: transform 0.2s ease; height: 100%; }
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); }
-.stat-card.azul { --card-color-start: #1e3a8a; --card-color-end: #1e40af; }
-.stat-card.verde { --card-color-start: #22c55e; --card-color-end: #16a34a; }
-.stat-card.dorado { --card-color-start: #d4af37; --card-color-end: #b8941f; }
-.stat-icon { width: 50px; height: 50px; border-radius: 10px; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 15px; color: white; }
-.stat-value { font-size: 1.75rem; font-weight: 700; margin: 10px 0; color: white !important; }
-.stat-label { font-size: 0.85rem; opacity: 0.95; font-weight: 500; color: white !important; }
-.sucursal-card { border-left: 4px solid #1e3a8a; transition: transform 0.2s ease; }
-.sucursal-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); }
-.card-body { padding: 25px; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .stat-card { padding: 15px; }
-    .stat-value { font-size: 1.5rem; }
-    .card-body { padding: 15px; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select { min-height: 44px; } }
-</style>
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
+// ============================================================================
+// VARIABLES GLOBALES
+// ============================================================================
 let sucursalesData = [];
+let sucursalesFiltradas = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    cargarSucursales();
-    cargarEmpleados();
-});
+// ============================================================================
+// FUNCIONES PRINCIPALES
+// ============================================================================
 
-function cargarSucursales() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/configuracion/sucursales.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                sucursalesData = data.data;
-                renderizarSucursales();
-                actualizarEstadisticas();
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    */
-    
-    setTimeout(() => {
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-        mostrarMensajeDesarrollo();
-    }, 1500);
+async function cargarSucursales() {
+    try {
+        mostrarCargando();
+        
+        const estado = document.getElementById('selectEstado').value;
+        const filtros = {};
+        
+        if (estado !== '') {
+            filtros.activo = estado;
+        }
+        
+        const resultado = await api.listarSucursales(filtros);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            sucursalesData = resultado.data || [];
+            sucursalesFiltradas = [...sucursalesData];
+            
+            actualizarEstadisticas();
+            aplicarFiltros();
+        } else {
+            mostrarError('No se pudieron cargar las sucursales');
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error al cargar sucursales:', error);
+        mostrarError('Error al cargar sucursales: ' + error.message);
+        mostrarMensajeVacio('tablaSucursales', 'Error al cargar datos', 6);
+    }
 }
 
-function cargarEmpleados() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/empleados/lista.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('responsable_id');
-                data.data.forEach(e => {
-                    const option = document.createElement('option');
-                    option.value = e.id;
-                    option.textContent = e.nombre + ' - ' + e.cargo;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
+function actualizarEstadisticas() {
+    const total = sucursalesData.length;
+    const activas = sucursalesData.filter(s => s.activo == 1).length;
+    const inactivas = total - activas;
+    
+    document.getElementById('totalSucursales').textContent = formatearNumero(total);
+    document.getElementById('sucursalesActivas').textContent = formatearNumero(activas);
+    document.getElementById('sucursalesInactivas').textContent = formatearNumero(inactivas);
 }
 
-function renderizarSucursales() {
-    const container = document.getElementById('sucursalesContainer');
+function aplicarFiltros() {
+    const buscar = document.getElementById('inputBuscar').value.toLowerCase().trim();
     
-    if (sucursalesData.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="bi bi-building" style="font-size: 48px;"></i><p class="mt-2">Sin sucursales registradas</p></div>';
+    sucursalesFiltradas = sucursalesData.filter(sucursal => {
+        if (buscar) {
+            const nombre = (sucursal.nombre || '').toLowerCase();
+            const direccion = (sucursal.direccion || '').toLowerCase();
+            
+            if (!nombre.includes(buscar) && !direccion.includes(buscar)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    mostrarSucursales();
+}
+
+function mostrarSucursales() {
+    const tbody = document.getElementById('tablaSucursalesBody');
+    
+    if (sucursalesFiltradas.length === 0) {
+        mostrarMensajeVacio('tablaSucursales', 'No hay sucursales para mostrar', 6);
         return;
     }
     
     let html = '';
-    sucursalesData.forEach(s => {
-        const badgeEstado = s.activo ? '<span class="badge bg-success">Activa</span>' : '<span class="badge bg-secondary">Inactiva</span>';
+    
+    sucursalesFiltradas.forEach(sucursal => {
+        const badgeEstado = sucursal.activo == 1 
+            ? '<span class="badge bg-success">Activa</span>'
+            : '<span class="badge bg-secondary">Inactiva</span>';
+        
+        const btnVer = `
+            <a href="ver.php?id=${sucursal.id}" 
+               class="btn btn-sm btn-outline-info" 
+               title="Ver">
+                <i class="bi bi-eye"></i>
+            </a>
+        `;
+        
+        const btnEditar = `
+            <a href="editar.php?id=${sucursal.id}" 
+               class="btn btn-sm btn-outline-warning" 
+               title="Editar">
+                <i class="bi bi-pencil"></i>
+            </a>
+        `;
+        
+        const btnEstado = sucursal.activo == 1
+            ? `<button class="btn btn-sm btn-outline-danger" 
+                       onclick="cambiarEstado(${sucursal.id}, 0)" 
+                       title="Desactivar">
+                   <i class="bi bi-x-circle"></i>
+               </button>`
+            : `<button class="btn btn-sm btn-outline-success" 
+                       onclick="cambiarEstado(${sucursal.id}, 1)" 
+                       title="Activar">
+                   <i class="bi bi-check-circle"></i>
+               </button>`;
+        
         html += `
-            <div class="col-lg-6">
-                <div class="card shadow-sm sucursal-card">
-                    <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-building"></i> ${s.nombre}</h5>
-                            ${badgeEstado}
-                        </div>
+            <tr>
+                <td><strong>${escaparHTML(sucursal.nombre || '')}</strong></td>
+                <td>${escaparHTML(sucursal.direccion || '-')}</td>
+                <td>${escaparHTML(sucursal.telefono || '-')}</td>
+                <td>${escaparHTML(sucursal.email || '-')}</td>
+                <td>${badgeEstado}</td>
+                <td class="text-center">
+                    <div class="btn-group btn-group-sm" role="group">
+                        ${btnVer}
+                        ${btnEditar}
+                        ${btnEstado}
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <small class="text-muted d-block"><i class="bi bi-geo-alt"></i> Dirección:</small>
-                            <strong>${s.direccion}</strong>
-                        </div>
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <small class="text-muted d-block"><i class="bi bi-phone"></i> Teléfono:</small>
-                                <strong>${s.telefono || 'No especificado'}</strong>
-                            </div>
-                            <div class="col-md-6">
-                                <small class="text-muted d-block"><i class="bi bi-envelope"></i> Email:</small>
-                                <strong>${s.email || 'No especificado'}</strong>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <small class="text-muted d-block"><i class="bi bi-person-badge"></i> Responsable:</small>
-                            <strong>${s.responsable_nombre || 'Sin responsable'}</strong>
-                        </div>
-                        <hr>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <h4 class="text-primary mb-0">${s.total_usuarios || 0}</h4>
-                                <small class="text-muted">Usuarios</small>
-                            </div>
-                            <div class="col-6">
-                                <h4 class="text-success mb-0">${s.total_inventario || 0}</h4>
-                                <small class="text-muted">Productos</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="btn-group w-100" role="group">
-                            <button class="btn btn-warning btn-sm" onclick="editarSucursal(${s.id})">
-                                <i class="bi bi-pencil"></i> <span class="d-none d-md-inline">Editar</span>
-                            </button>
-                            <button class="btn btn-info btn-sm" onclick="verDetalles(${s.id})">
-                                <i class="bi bi-eye"></i> <span class="d-none d-md-inline">Detalles</span>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="desactivarSucursal(${s.id}, '${s.nombre}')">
-                                <i class="bi bi-x-circle"></i> <span class="d-none d-md-inline">Desactivar</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </td>
+            </tr>
         `;
     });
     
-    container.innerHTML = html;
+    tbody.innerHTML = html;
 }
 
-function actualizarEstadisticas() {
-    document.getElementById('statTotal').textContent = sucursalesData.length;
-    document.getElementById('statUsuarios').textContent = sucursalesData.reduce((sum, s) => sum + (s.total_usuarios || 0), 0);
-    document.getElementById('statProductos').textContent = sucursalesData.reduce((sum, s) => sum + (s.total_inventario || 0), 0);
-}
-
-function prepararNuevaSucursal() {
-    document.getElementById('tituloModal').innerHTML = '<i class="bi bi-building"></i> Nueva Sucursal';
-    document.getElementById('formSucursal').reset();
-    document.getElementById('sucursalId').value = '';
-    document.getElementById('activo').checked = true;
-}
-
-function editarSucursal(id) {
-    const sucursal = sucursalesData.find(s => s.id === id);
-    if (!sucursal) return;
+async function cambiarEstado(id, nuevoEstado) {
+    const accion = nuevoEstado == 1 ? 'activar' : 'desactivar';
+    const confirmacion = await confirmarAccion(
+        `¿Estás seguro de ${accion} esta sucursal?`
+    );
     
-    document.getElementById('tituloModal').innerHTML = '<i class="bi bi-pencil"></i> Editar Sucursal';
-    document.getElementById('sucursalId').value = sucursal.id;
-    document.getElementById('nombre').value = sucursal.nombre;
-    document.getElementById('direccion').value = sucursal.direccion;
-    document.getElementById('telefono').value = sucursal.telefono || '';
-    document.getElementById('emailSucursal').value = sucursal.email || '';
-    document.getElementById('responsable_id').value = sucursal.responsable_id || '';
-    document.getElementById('activo').checked = sucursal.activo;
+    if (!confirmacion) return;
     
-    new bootstrap.Modal(document.getElementById('modalSucursal')).show();
-}
-
-function guardarSucursal() {
-    const form = document.getElementById('formSucursal');
-    if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-    }
-    
-    const formData = new FormData(form);
-    const datos = Object.fromEntries(formData);
-    datos.activo = document.getElementById('activo').checked ? 1 : 0;
-    
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.disabled = true;
-    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-    
-    const esNuevo = !datos.id;
-    
-    /* TODO FASE 5: Descomentar
-    const url = '<?php echo BASE_URL; ?>api/configuracion/sucursales.php';
-    const method = esNuevo ? 'POST' : 'PUT';
-    
-    fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(esNuevo ? 'Sucursal creada exitosamente' : 'Sucursal actualizada exitosamente');
-            bootstrap.Modal.getInstance(document.getElementById('modalSucursal')).hide();
+    try {
+        mostrarCargando();
+        
+        const resultado = await api.cambiarEstadoSucursal(id, nuevoEstado);
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            mostrarExito(`Sucursal ${accion === 'activar' ? 'activada' : 'desactivada'} correctamente`);
             cargarSucursales();
         } else {
-            alert(data.message);
+            mostrarError(resultado.message || 'Error al cambiar estado');
         }
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar';
-    });
-    */
-    
-    setTimeout(() => {
-        alert('MODO DESARROLLO: Sucursal ' + (esNuevo ? 'creada' : 'actualizada') + '\n\n' + JSON.stringify(datos, null, 2));
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar';
-        bootstrap.Modal.getInstance(document.getElementById('modalSucursal')).hide();
-    }, 1000);
-}
-
-function verDetalles(id) { alert('MODO DESARROLLO: Ver detalles de sucursal #' + id); }
-
-function desactivarSucursal(id, nombre) {
-    if (confirm('¿Está seguro de desactivar la sucursal "' + nombre + '"?')) {
-        alert('MODO DESARROLLO: Desactivar sucursal #' + id);
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error: ' + error.message);
     }
 }
 
-function mostrarMensajeDesarrollo() {
-    document.getElementById('sucursalesContainer').innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="bi bi-building" style="font-size: 48px;"></i><p class="mt-2">MODO DESARROLLO: Esperando API de sucursales</p></div>';
+function limpiarFiltros() {
+    document.getElementById('inputBuscar').value = '';
+    document.getElementById('selectEstado').value = '';
+    cargarSucursales();
 }
-</script>
 
-<?php include '../../includes/footer.php'; ?>
+// ============================================================================
+// EVENT LISTENERS
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarSucursales();
+    
+    document.getElementById('inputBuscar').addEventListener('input', aplicarFiltros);
+    document.getElementById('selectEstado').addEventListener('change', cargarSucursales);
+    document.getElementById('btnLimpiar').addEventListener('click', limpiarFiltros);
+});
+
+console.log('✅ Vista de Sucursales cargada correctamente');
+</script>

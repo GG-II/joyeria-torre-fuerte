@@ -3,12 +3,6 @@
  * ================================================
  * MÓDULO TALLER - TRANSFERIR TRABAJO
  * ================================================
- * 
- * TODO FASE 5: Conectar con APIs
- * GET /api/taller/ver.php?id={trabajo_id} - Cargar datos trabajo
- * GET /api/taller/lista.php?estado=en_proceso - Lista trabajos (si no viene ID)
- * GET /api/empleados/lista.php?rol=orfebre - Cargar orfebres
- * POST /api/taller/transferir.php - Procesar transferencia
  */
 
 require_once '../../config.php';
@@ -17,304 +11,381 @@ require_once '../../includes/funciones.php';
 require_once '../../includes/auth.php';
 
 requiere_autenticacion();
-requiere_rol(['administrador', 'dueño', 'gerente']);
+requiere_rol(['administrador', 'dueño', 'vendedor']);
 
-$trabajo_id = $_GET['id'] ?? null;
-$trabajo = null;
+$trabajo_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$titulo_pagina = 'Transferir Trabajo';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+if (!$trabajo_id) {
+    header('Location: lista.php');
+    exit;
+}
+
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>dashboard.php"><i class="bi bi-house"></i> Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="lista.php"><i class="bi bi-tools"></i> Taller</a></li>
-            <li class="breadcrumb-item active">Transferir Trabajo</li>
-        </ol>
-    </nav>
-
-    <div class="page-header mb-4">
-        <h1 class="mb-2"><i class="bi bi-arrow-left-right"></i> Transferir Trabajo a Otro Orfebre</h1>
-        <p class="text-muted mb-0">Registro inmutable de transferencia entre empleados</p>
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-arrow-left-right"></i> Transferir Trabajo</h2>
+            <p class="text-muted mb-0">Asignar trabajo a otro empleado</p>
+        </div>
+        <a href="ver.php?id=<?php echo $trabajo_id; ?>" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
     </div>
 
-    <div id="loadingState" class="text-center py-5" style="<?php echo $trabajo_id ? '' : 'display: none;'; ?>">
-        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 text-muted">Cargando datos del trabajo...</p>
-    </div>
+    <hr class="border-warning border-2 opacity-75 mb-4">
 
-    <div class="row justify-content-center">
+    <div class="row">
+        <!-- Información del Trabajo -->
         <div class="col-lg-8">
-            <div id="alertTrabajo" class="alert alert-info" style="display: none;">
-                <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Trabajo a Transferir</h5>
-                <p class="mb-0" id="infoTrabajo"></p>
-            </div>
-
-            <div class="card shadow-sm">
-                <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                    <i class="bi bi-pencil-square"></i> Datos de la Transferencia
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Información del Trabajo</h5>
                 </div>
                 <div class="card-body">
-                    <form id="formTransferencia" method="POST">
-                        <input type="hidden" id="trabajo_id" name="trabajo_id" value="<?php echo $trabajo_id ?? ''; ?>">
-                        <input type="hidden" id="empleado_origen_id" name="empleado_origen_id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Código</label>
+                            <h4 id="codigo" class="text-primary">-</h4>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Estado</label>
+                            <h4><span id="estado" class="badge">-</span></h4>
+                        </div>
+                    </div>
 
-                        <?php if (!$trabajo_id): ?>
-                        <div class="mb-4">
-                            <label for="trabajo_select" class="form-label"><i class="bi bi-search"></i> Seleccionar Trabajo *</label>
-                            <select class="form-select" id="trabajo_select" required>
-                                <option value="">Busque por código o cliente...</option>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Cliente</label>
+                            <p id="cliente" class="mb-0">-</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted">Teléfono</label>
+                            <p id="telefono" class="mb-0">-</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Descripción de la Pieza</label>
+                        <p id="descripcionPieza" class="border-start border-3 border-warning ps-3">-</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Tipo de Trabajo</label>
+                            <p id="tipoTrabajo">-</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Material</label>
+                            <p id="material">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de Transferencias -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historial de Transferencias</h5>
+                </div>
+                <div class="card-body">
+                    <div id="historialContainer">
+                        <p class="text-center text-muted">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Transferencia -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Empleados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Empleado Actual</label>
+                        <div class="alert alert-primary" id="empleadoActualContainer">
+                            <i class="bi bi-person-fill"></i>
+                            <strong id="empleadoActual">-</strong>
+                        </div>
+                    </div>
+
+                    <form id="formTransferencia">
+                        <div class="mb-3">
+                            <label for="empleado_destino_id" class="form-label">
+                                Transferir a: <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select form-select-lg" id="empleado_destino_id" required>
+                                <option value="">Seleccione empleado...</option>
                             </select>
                         </div>
-                        <hr class="my-4">
-                        <?php endif; ?>
 
-                        <h5 class="mb-3 text-primary"><i class="bi bi-arrow-left-right"></i> Información de Transferencia</h5>
-
-                        <div class="mb-3">
-                            <label for="empleado_destino_id" class="form-label"><i class="bi bi-person-workspace"></i> Transferir a Orfebre *</label>
-                            <select class="form-select" id="empleado_destino_id" name="empleado_destino_id" required>
-                                <option value="">Seleccione...</option>
-                            </select>
+                        <div class="mb-4">
+                            <label for="nota" class="form-label">Nota (opcional)</label>
+                            <textarea class="form-control" id="nota" rows="3" 
+                                      placeholder="Ej: Transferido para grabado personalizado"></textarea>
+                            <small class="text-muted">Motivo o instrucciones de la transferencia</small>
                         </div>
 
                         <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <strong>Importante:</strong> La transferencia se registrará en la tabla <code>transferencias_trabajo</code> que es INMUTABLE y sirve como auditoría completa.
+                            <i class="bi bi-info-circle"></i>
+                            <small>
+                                <strong>Importante:</strong> Esta acción quedará registrada en el historial.
+                            </small>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="nota" class="form-label"><i class="bi bi-chat-left-text"></i> Nota / Motivo de la Transferencia</label>
-                            <textarea class="form-control" id="nota" name="nota" rows="3" placeholder="Ej: Transferido por carga de trabajo, especialización requerida, etc."></textarea>
-                        </div>
-
-                        <div class="d-flex flex-column flex-sm-row justify-content-end gap-2">
-                            <a href="<?php echo $trabajo_id ? 'ver.php?id=' . $trabajo_id : 'lista.php'; ?>" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary" id="btnTransferir">
-                                <i class="bi bi-arrow-left-right"></i> Realizar Transferencia
-                            </button>
-                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="bi bi-arrow-left-right"></i> Transferir Trabajo
+                        </button>
                     </form>
                 </div>
             </div>
 
-            <div class="card mt-3 shadow-sm">
-                <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                    <i class="bi bi-info-circle"></i> Cómo Funciona la Transferencia
+            <!-- Info Adicional -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar"></i> Fechas</h5>
                 </div>
                 <div class="card-body">
-                    <h6 class="fw-bold">Proceso automático al transferir:</h6>
-                    <ol class="mb-3">
-                        <li>Se actualiza el campo <code>empleado_actual_id</code> en <code>trabajos_taller</code></li>
-                        <li>Se crea un registro INMUTABLE en <code>transferencias_trabajo</code> con:
-                            <ul class="mt-2">
-                                <li><code>trabajo_id</code></li>
-                                <li><code>empleado_origen_id</code></li>
-                                <li><code>empleado_destino_id</code></li>
-                                <li><code>fecha_transferencia</code> (automática)</li>
-                                <li><code>estado_trabajo_momento</code> (estado actual del trabajo)</li>
-                                <li><code>nota</code> (motivo)</li>
-                                <li><code>usuario_registra_id</code> (quien hace la transferencia)</li>
-                            </ul>
-                        </li>
-                    </ol>
-
-                    <div class="alert alert-success mb-0">
-                        <i class="bi bi-shield-check"></i>
-                        <strong>Auditoría Completa:</strong> Cada transferencia queda registrada permanentemente, permitiendo rastrear la trazabilidad completa del trabajo.
+                    <div class="mb-2">
+                        <small class="text-muted">Fecha Recepción:</small>
+                        <p id="fechaRecepcion" class="mb-0"><strong>-</strong></p>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Entrega Prometida:</small>
+                        <p id="fechaEntrega" class="mb-0"><strong>-</strong></p>
+                    </div>
+                    <div>
+                        <small class="text-muted">Días restantes:</small>
+                        <p id="diasRestantes" class="mb-0"><strong>-</strong></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.card-body { padding: 25px; }
-.form-label { font-weight: 500; margin-bottom: 0.5rem; color: #374151; }
-.form-control, .form-select { border: 1px solid #d1d5db; border-radius: 6px; padding: 0.625rem 0.75rem; }
-.form-control:focus, .form-select:focus { border-color: #1e3a8a; box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.15); }
-textarea.form-control { resize: vertical; }
-h5.text-primary { color: #1e3a8a !important; font-weight: 600; }
-h6.fw-bold { color: #1a1a1a; font-size: 0.95rem; margin-bottom: 0.75rem; }
-code { background-color: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #1e3a8a; }
-hr { opacity: 0.1; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .card-body { padding: 15px; }
-    h5 { font-size: 1.1rem; }
-    .btn { width: 100%; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select, textarea { min-height: 44px; } }
-</style>
+<?php require_once '../../includes/footer.php'; ?>
+
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
-let trabajoActual = null;
+const trabajoId = <?php echo $trabajo_id; ?>;
+let trabajo = null;
+let empleadoActualId = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    cargarOrfebres();
-    
-    <?php if ($trabajo_id): ?>
-    cargarDatosTrabajo(<?php echo $trabajo_id; ?>);
-    <?php else: ?>
-    cargarTrabajos();
-    <?php endif; ?>
-});
-
-function cargarDatosTrabajo(trabajoId) {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/taller/ver.php?id=' + trabajoId)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                trabajoActual = data.data;
-                mostrarInfoTrabajo(data.data);
-                document.getElementById('empleado_origen_id').value = data.data.empleado_actual_id;
-                document.getElementById('loadingState').style.display = 'none';
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    */
-    
-    setTimeout(() => {
-        document.getElementById('loadingState').style.display = 'none';
-        alert('MODO DESARROLLO: Cargar datos del trabajo - Pendiente API');
-    }, 1000);
-}
-
-function cargarTrabajos() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/taller/lista.php?estado=en_proceso')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('trabajo_select');
-                data.data.forEach(t => {
-                    const option = document.createElement('option');
-                    option.value = t.id;
-                    option.textContent = `${t.codigo} - ${t.cliente_nombre} - ${t.descripcion_pieza}`;
-                    option.dataset.empleadoId = t.empleado_actual_id;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
-}
-
-function cargarOrfebres() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/empleados/lista.php?rol=orfebre')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('empleado_destino_id');
-                data.data.forEach(emp => {
-                    const option = document.createElement('option');
-                    option.value = emp.id;
-                    option.textContent = emp.nombre;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
-    
-    const orfebres = ['Roberto Orfebre', 'Juan Artesano', 'Pedro Maestro'];
-    const select = document.getElementById('empleado_destino_id');
-    orfebres.forEach((nombre, i) => {
-        const option = document.createElement('option');
-        option.value = i + 3;
-        option.textContent = nombre;
-        select.appendChild(option);
-    });
-}
-
-function mostrarInfoTrabajo(trabajo) {
-    document.getElementById('infoTrabajo').innerHTML = `
-        <strong>Código:</strong> ${trabajo.codigo}<br>
-        <strong>Cliente:</strong> ${trabajo.cliente_nombre}<br>
-        <strong>Pieza:</strong> ${trabajo.descripcion_pieza}<br>
-        <strong>Orfebre actual:</strong> ${trabajo.empleado_actual_nombre}
-    `;
-    document.getElementById('alertTrabajo').style.display = 'block';
-}
-
-<?php if (!$trabajo_id): ?>
-document.getElementById('trabajo_select').addEventListener('change', function() {
-    const trabajoId = this.value;
-    if (trabajoId) {
-        document.getElementById('trabajo_id').value = trabajoId;
-        document.getElementById('empleado_origen_id').value = this.options[this.selectedIndex].dataset.empleadoId;
-        cargarDatosTrabajo(trabajoId);
+async function cargarDatos() {
+    try {
+        mostrarCargando();
+        
+        // Cargar trabajo
+        const res = await fetch(`/joyeria-torre-fuerte/api/taller/detalle.php?id=${trabajoId}`);
+        const data = await res.json();
+        
+        if (!data.success) {
+            ocultarCargando();
+            await mostrarError(data.message || 'Trabajo no encontrado');
+            window.location.href = 'lista.php';
+            return;
+        }
+        
+        trabajo = data.data.trabajo;
+        const historial = data.data.historial_transferencias || [];
+        
+        // Verificar que se puede transferir
+        if (trabajo.estado === 'entregado' || trabajo.estado === 'cancelado') {
+            ocultarCargando();
+            await mostrarError('No se puede transferir un trabajo entregado o cancelado');
+            window.location.href = 'ver.php?id=' + trabajoId;
+            return;
+        }
+        
+        empleadoActualId = trabajo.empleado_actual_id;
+        
+        mostrarTrabajo(trabajo);
+        mostrarHistorial(historial);
+        await cargarEmpleados();
+        
+        ocultarCargando();
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error al cargar datos');
     }
-});
-<?php endif; ?>
+}
 
-document.getElementById('empleado_destino_id').addEventListener('change', function() {
-    const origen = parseInt(document.getElementById('empleado_origen_id').value);
-    const destino = parseInt(this.value);
+function mostrarTrabajo(t) {
+    document.getElementById('codigo').textContent = t.codigo;
     
-    if (origen && destino && origen === destino) {
-        alert('No puede transferir el trabajo al mismo orfebre que lo tiene actualmente');
-        this.value = '';
+    const estadoBadges = {
+        'recibido': 'bg-warning text-dark',
+        'en_proceso': 'bg-primary',
+        'completado': 'bg-success'
+    };
+    
+    const estadoTextos = {
+        'recibido': 'Recibido',
+        'en_proceso': 'En Proceso',
+        'completado': 'Completado'
+    };
+    
+    const estadoEl = document.getElementById('estado');
+    estadoEl.className = 'badge ' + (estadoBadges[t.estado] || 'bg-secondary');
+    estadoEl.textContent = estadoTextos[t.estado] || t.estado;
+    
+    document.getElementById('cliente').textContent = t.cliente_nombre;
+    document.getElementById('telefono').textContent = t.cliente_telefono;
+    document.getElementById('descripcionPieza').textContent = t.descripcion_pieza;
+    document.getElementById('tipoTrabajo').textContent = t.tipo_trabajo;
+    
+    const materialBadge = {
+        'oro': '<span class="badge bg-warning text-dark">Oro</span>',
+        'plata': '<span class="badge bg-secondary">Plata</span>',
+        'otro': '<span class="badge bg-info">Otro</span>'
+    };
+    document.getElementById('material').innerHTML = materialBadge[t.material] || t.material;
+    
+    document.getElementById('empleadoActual').textContent = t.empleado_actual_nombre;
+    
+    // Fechas
+    document.getElementById('fechaRecepcion').textContent = formatearFechaHora(t.fecha_recepcion);
+    document.getElementById('fechaEntrega').textContent = formatearFecha(t.fecha_entrega_prometida);
+    
+    // Calcular días restantes
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fechaPromesa = new Date(t.fecha_entrega_prometida);
+    const diffTime = fechaPromesa - hoy;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const diasEl = document.getElementById('diasRestantes');
+    if (diffDays < 0) {
+        diasEl.innerHTML = `<span class="text-danger">${Math.abs(diffDays)} días de atraso</span>`;
+    } else if (diffDays === 0) {
+        diasEl.innerHTML = '<span class="text-warning">Vence hoy</span>';
+    } else {
+        diasEl.innerHTML = `<span class="text-success">${diffDays} días</span>`;
     }
-});
+}
 
-document.getElementById('formTransferencia').addEventListener('submit', function(e) {
-    e.preventDefault();
+function mostrarHistorial(historial) {
+    const container = document.getElementById('historialContainer');
     
-    if (!confirm('¿Confirma la transferencia de este trabajo? Esta acción quedará registrada permanentemente.')) {
+    if (!historial || historial.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">No hay transferencias previas</p>';
         return;
     }
     
-    const formData = new FormData(this);
-    const datos = {
-        trabajo_id: formData.get('trabajo_id'),
-        empleado_origen_id: formData.get('empleado_origen_id'),
-        empleado_destino_id: formData.get('empleado_destino_id'),
-        nota: formData.get('nota') || null
-    };
+    let html = '';
     
-    const btnTransferir = document.getElementById('btnTransferir');
-    btnTransferir.disabled = true;
-    btnTransferir.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
-    
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/taller/transferir.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Transferencia realizada exitosamente');
-            setTimeout(() => window.location.href = 'ver.php?id=' + datos.trabajo_id, 1500);
-        } else {
-            alert(data.message);
-            btnTransferir.disabled = false;
-            btnTransferir.innerHTML = '<i class="bi bi-arrow-left-right"></i> Realizar Transferencia';
-        }
+    historial.forEach((h, index) => {
+        html += `
+            <div class="mb-3 pb-3 ${index < historial.length - 1 ? 'border-bottom' : ''}">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> ${formatearFechaHora(h.fecha_transferencia)}
+                    </small>
+                    <span class="badge bg-secondary">${escaparHTML(h.estado_trabajo_momento)}</span>
+                </div>
+                <p class="mb-1">
+                    <i class="bi bi-arrow-right-circle text-primary"></i>
+                    <strong>${escaparHTML(h.empleado_origen_nombre)}</strong>
+                    <i class="bi bi-arrow-right"></i>
+                    <strong>${escaparHTML(h.empleado_destino_nombre)}</strong>
+                </p>
+                ${h.nota ? `<small class="text-muted"><i class="bi bi-chat-left-text"></i> ${escaparHTML(h.nota)}</small>` : ''}
+            </div>
+        `;
     });
-    */
     
-    console.log('Datos transferencia:', datos);
-    setTimeout(() => {
-        alert('MODO DESARROLLO: Transferencia lista.\n\n' + JSON.stringify(datos, null, 2));
-        btnTransferir.disabled = false;
-        btnTransferir.innerHTML = '<i class="bi bi-arrow-left-right"></i> Realizar Transferencia';
-    }, 1000);
-});
-</script>
+    container.innerHTML = html;
+}
 
-<?php include '../../includes/footer.php'; ?>
+async function cargarEmpleados() {
+    try {
+        const res = await fetch('/joyeria-torre-fuerte/api/usuarios/listar.php?activo=1');
+        const data = await res.json();
+        
+        if (!data.success) return;
+        
+        const empleados = data.data.usuarios || data.data || [];
+        const select = document.getElementById('empleado_destino_id');
+        
+        empleados.forEach(emp => {
+            // No incluir al empleado actual
+            if (emp.id == empleadoActualId) return;
+            
+            const option = document.createElement('option');
+            option.value = emp.id;
+            option.textContent = emp.nombre + ' (' + emp.rol + ')';
+            select.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('Error al cargar empleados:', error);
+    }
+}
+
+document.getElementById('formTransferencia').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const empleadoDestinoId = parseInt(document.getElementById('empleado_destino_id').value);
+    const nota = document.getElementById('nota').value.trim();
+    
+    if (!empleadoDestinoId) {
+        mostrarError('Seleccione el empleado destino');
+        return;
+    }
+    
+    // Obtener nombre del empleado destino
+    const selectDestino = document.getElementById('empleado_destino_id');
+    const nombreDestino = selectDestino.options[selectDestino.selectedIndex].text;
+    
+    const confirmacion = await confirmarAccion(
+        '¿Transferir este trabajo?',
+        `El trabajo será asignado a: <strong>${nombreDestino}</strong>`
+    );
+    
+    if (!confirmacion) return;
+    
+    try {
+        mostrarCargando();
+        
+        const res = await fetch('/joyeria-torre-fuerte/api/taller/transferir.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                trabajo_id: trabajoId,
+                empleado_destino_id: empleadoDestinoId,
+                nota: nota || null
+            })
+        });
+        
+        const resultado = await res.json();
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            await mostrarExito(resultado.message || 'Trabajo transferido exitosamente');
+            window.location.href = 'ver.php?id=' + trabajoId;
+        } else {
+            mostrarError(resultado.message || 'Error al transferir trabajo');
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error: ' + error.message);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', cargarDatos);
+</script>

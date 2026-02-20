@@ -3,11 +3,6 @@
  * ================================================
  * MÓDULO TALLER - EDITAR TRABAJO
  * ================================================
- * 
- * TODO FASE 5: Conectar con APIs
- * GET /api/taller/ver.php?id={trabajo_id} - Cargar datos
- * GET /api/empleados/lista.php?rol=orfebre - Cargar orfebres
- * POST /api/taller/actualizar.php - Guardar cambios
  */
 
 require_once '../../config.php';
@@ -16,378 +11,436 @@ require_once '../../includes/funciones.php';
 require_once '../../includes/auth.php';
 
 requiere_autenticacion();
-requiere_rol(['administrador', 'dueño', 'orfebre']);
+requiere_rol(['administrador', 'dueño', 'vendedor']);
 
-$trabajo_id = $_GET['id'] ?? null;
+$trabajo_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
 if (!$trabajo_id) {
     header('Location: lista.php');
     exit;
 }
 
-$trabajo = null;
-$titulo_pagina = 'Editar Trabajo';
-include '../../includes/header.php';
-include '../../includes/navbar.php';
+require_once '../../includes/header.php';
+require_once '../../includes/navbar.php';
 ?>
 
-<div class="container-fluid main-content">
-    <div id="loadingState" class="text-center py-5">
-        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
-        <p class="mt-3 text-muted">Cargando datos del trabajo...</p>
+<div class="container-fluid px-4 py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-pencil"></i> Editar Trabajo</h2>
+            <p class="text-muted mb-0" id="codigoTrabajo">Cargando...</p>
+        </div>
+        <a href="ver.php?id=<?php echo $trabajo_id; ?>" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
     </div>
 
-    <div id="mainContent" style="display: none;">
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="<?php echo BASE_URL; ?>dashboard.php"><i class="bi bi-house"></i> Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="lista.php"><i class="bi bi-tools"></i> Taller</a></li>
-                <li class="breadcrumb-item active">Editar Trabajo</li>
-            </ol>
-        </nav>
+    <hr class="border-warning border-2 opacity-75 mb-4">
 
-        <div class="page-header mb-4">
-            <div class="row align-items-center g-3">
-                <div class="col-md-6">
-                    <h1 class="mb-2"><i class="bi bi-pencil-square"></i> Editar Trabajo</h1>
-                    <p class="text-muted mb-0" id="trabajoCodigo">Código: -</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="ver.php?id=<?php echo $trabajo_id; ?>" class="btn btn-info">
-                        <i class="bi bi-eye"></i> <span class="d-none d-sm-inline">Ver Detalles</span>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-3">
+    <form id="formTrabajo">
+        <div class="row">
+            <!-- Columna Izquierda -->
             <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                        <i class="bi bi-pencil-square"></i> Información del Trabajo
+                
+                <!-- Datos del Cliente -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person"></i> Datos del Cliente</h5>
                     </div>
                     <div class="card-body">
-                        <form id="formTrabajo" method="POST">
-                            <input type="hidden" name="id" value="<?php echo $trabajo_id; ?>">
-
-                            <h5 class="mb-3 text-primary"><i class="bi bi-person"></i> Datos del Cliente</h5>
-
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-8">
-                                    <label class="form-label">Nombre del Cliente</label>
-                                    <input type="text" class="form-control" id="cliente_nombre" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Teléfono</label>
-                                    <input type="text" class="form-control" id="cliente_telefono" readonly>
-                                </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cliente_nombre" class="form-label">
+                                    Nombre del Cliente <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="cliente_nombre" required>
                             </div>
 
-                            <hr class="my-4">
-
-                            <h5 class="mb-3 text-primary"><i class="bi bi-clipboard-check"></i> Estado del Trabajo</h5>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label for="estado" class="form-label"><i class="bi bi-flag"></i> Estado *</label>
-                                    <select class="form-select" id="estado" name="estado" required>
-                                        <option value="recibido">Recibido</option>
-                                        <option value="en_proceso">En Proceso</option>
-                                        <option value="completado">Completado</option>
-                                        <option value="entregado">Entregado</option>
-                                        <option value="cancelado">Cancelado</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="empleado_actual_id" class="form-label"><i class="bi bi-person-workspace"></i> Orfebre Asignado *</label>
-                                    <select class="form-select" id="empleado_actual_id" name="empleado_actual_id" required>
-                                        <option value="">Seleccione...</option>
-                                    </select>
-                                </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cliente_telefono" class="form-label">
+                                    Teléfono <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="cliente_telefono" required>
                             </div>
-
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label for="fecha_entrega_prometida" class="form-label"><i class="bi bi-calendar-event"></i> Fecha Entrega Prometida *</label>
-                                    <input type="date" class="form-control" id="fecha_entrega_prometida" name="fecha_entrega_prometida" required>
-                                </div>
-                                <div class="col-md-6" id="fechaEntregaRealContainer" style="display: none;">
-                                    <label for="fecha_entrega_real" class="form-label"><i class="bi bi-check-circle"></i> Fecha Entrega Real</label>
-                                    <input type="datetime-local" class="form-control" id="fecha_entrega_real" name="fecha_entrega_real">
-                                </div>
-                            </div>
-
-                            <hr class="my-4">
-
-                            <h5 class="mb-3 text-primary"><i class="bi bi-file-text"></i> Descripción del Trabajo</h5>
-
-                            <div class="mb-3">
-                                <label for="descripcion_trabajo" class="form-label">Trabajo a Realizar *</label>
-                                <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="3" required></textarea>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="observaciones" class="form-label"><i class="bi bi-chat-left-text"></i> Observaciones</label>
-                                <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
-                            </div>
-
-                            <hr class="my-4">
-
-                            <h5 class="mb-3 text-primary"><i class="bi bi-cash"></i> Información de Pago</h5>
-
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-4">
-                                    <label for="precio_total" class="form-label">Precio Total (Q) *</label>
-                                    <input type="number" class="form-control" id="precio_total" name="precio_total" min="0" step="0.01" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Anticipo Recibido (Q)</label>
-                                    <input type="text" class="form-control" id="anticipo_display" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Saldo Pendiente (Q)</label>
-                                    <input type="text" class="form-control text-danger fw-bold" id="saldo" readonly>
-                                </div>
-                            </div>
-
-                            <div class="d-flex flex-column flex-sm-row justify-content-between gap-2">
-                                <a href="lista.php" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
-                                <div class="d-flex flex-column flex-sm-row gap-2">
-                                    <a href="ver.php?id=<?php echo $trabajo_id; ?>" class="btn btn-info"><i class="bi bi-eye"></i> Ver Detalles</a>
-                                    <button type="submit" class="btn btn-primary" id="btnGuardar"><i class="bi bi-save"></i> Guardar Cambios</button>
-                                </div>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Descripción de la Pieza -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-gem"></i> Descripción de la Pieza</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="material" class="form-label">
+                                    Material <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="material" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="oro">Oro</option>
+                                    <option value="plata">Plata</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="peso_gramos" class="form-label">Peso (gramos)</label>
+                                <input type="number" class="form-control" id="peso_gramos" 
+                                       step="0.001" min="0">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="largo_cm" class="form-label">Largo (cm)</label>
+                                <input type="number" class="form-control" id="largo_cm" 
+                                       step="0.01" min="0">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="estilo" class="form-label">Estilo</label>
+                                <input type="text" class="form-control" id="estilo">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label d-block">¿Con Piedra?</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="con_piedra" 
+                                           id="con_piedra_si" value="1">
+                                    <label class="form-check-label" for="con_piedra_si">Sí</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="con_piedra" 
+                                           id="con_piedra_no" value="0">
+                                    <label class="form-check-label" for="con_piedra_no">No</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion_pieza" class="form-label">
+                                Descripción de la Pieza <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="descripcion_pieza" rows="2" required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descripción del Trabajo -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-tools"></i> Descripción del Trabajo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="tipo_trabajo" class="form-label">
+                                Tipo de Trabajo <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="tipo_trabajo" required>
+                                <option value="">Seleccione...</option>
+                                <option value="reparacion">Reparación</option>
+                                <option value="ajuste">Ajuste</option>
+                                <option value="grabado">Grabado</option>
+                                <option value="diseño">Diseño</option>
+                                <option value="limpieza">Limpieza</option>
+                                <option value="engaste">Engaste</option>
+                                <option value="repuesto">Repuesto</option>
+                                <option value="fabricacion">Fabricación</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion_trabajo" class="form-label">
+                                Descripción del Trabajo <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="descripcion_trabajo" rows="3" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
+            <!-- Columna Derecha -->
             <div class="col-lg-4">
-                <div class="card mb-3 shadow-sm">
-                    <div class="card-header" style="background-color: #1e3a8a; color: white;">
-                        <i class="bi bi-info-circle"></i> Información del Trabajo
+                
+                <!-- Estado Actual -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Estado Actual</h5>
                     </div>
-                    <div class="card-body" id="infoTrabajo">
-                        <div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>
+                    <div class="card-body text-center">
+                        <h3 id="estadoActual" class="mb-0">-</h3>
                     </div>
                 </div>
 
-                <div class="card shadow-sm">
-                    <div class="card-header"><i class="bi bi-lightning"></i> Acciones Rápidas</div>
-                    <div class="list-group list-group-flush">
-                        <a href="ver.php?id=<?php echo $trabajo_id; ?>" class="list-group-item list-group-item-action">
-                            <i class="bi bi-clock-history"></i> Ver historial de transferencias
-                        </a>
-                        <a href="transferir.php?id=<?php echo $trabajo_id; ?>" class="list-group-item list-group-item-action">
-                            <i class="bi bi-arrow-left-right"></i> Transferir a otro orfebre
-                        </a>
-                        <a href="#" onclick="imprimirOrden(); return false;" class="list-group-item list-group-item-action">
-                            <i class="bi bi-printer"></i> Imprimir orden de trabajo
-                        </a>
+                <!-- Fechas -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-calendar"></i> Fechas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Fecha Recepción</label>
+                            <p id="fechaRecepcion">-</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fecha_entrega_prometida" class="form-label">
+                                Fecha Entrega Prometida <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="fecha_entrega_prometida" required>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Precios -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0"><i class="bi bi-cash"></i> Precios</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="precio_total" class="form-label">
+                                Precio Total (Q) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control form-control-lg" id="precio_total" 
+                                   step="0.01" min="0" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="anticipo" class="form-label">Anticipo (Q)</label>
+                            <input type="number" class="form-control" id="anticipo" 
+                                   step="0.01" min="0">
+                        </div>
+
+                        <div class="alert alert-info">
+                            <strong>Saldo:</strong> <span id="saldoCalculado">Q 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <button type="submit" class="btn btn-warning btn-lg w-100 mb-2">
+                    <i class="bi bi-check-circle"></i> Guardar Cambios
+                </button>
+
+                <a href="ver.php?id=<?php echo $trabajo_id; ?>" class="btn btn-secondary w-100">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+
             </div>
         </div>
-    </div>
+    </form>
 
-    <div id="errorState" style="display: none;" class="text-center py-5">
-        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 48px;"></i>
-        <h4 class="mt-3">Error al cargar el trabajo</h4>
-        <p class="text-muted" id="errorMessage">No se pudo cargar la información.</p>
-        <a href="lista.php" class="btn btn-primary mt-3"><i class="bi bi-arrow-left"></i> Volver al listado</a>
-    </div>
 </div>
 
-<style>
-.main-content { padding: 20px; min-height: calc(100vh - 120px); }
-.page-header h1 { font-size: 1.75rem; font-weight: 600; color: #1a1a1a; }
-.shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important; }
-.card-body { padding: 25px; }
-.form-label { font-weight: 500; margin-bottom: 0.5rem; color: #374151; }
-.form-control, .form-select { border: 1px solid #d1d5db; border-radius: 6px; padding: 0.625rem 0.75rem; }
-.form-control:focus, .form-select:focus { border-color: #1e3a8a; box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.15); }
-textarea.form-control { resize: vertical; }
-h5.text-primary { color: #1e3a8a !important; font-weight: 600; }
-hr { opacity: 0.1; }
-.card-body > p:not(:last-child) { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; }
-.list-group-item { transition: background-color 0.15s ease; }
-.list-group-item:hover { background-color: #f3f4f6; }
-@media (max-width: 575.98px) {
-    .main-content { padding: 15px 10px; }
-    .page-header h1 { font-size: 1.5rem; }
-    .card-body { padding: 15px; }
-    h5 { font-size: 1.1rem; }
-    .btn { width: 100%; }
-}
-@media (min-width: 576px) and (max-width: 767.98px) { .main-content { padding: 18px 15px; } }
-@media (min-width: 992px) { .main-content { padding: 25px 30px; } }
-@media (max-width: 767.98px) { .btn, .form-control, .form-select, textarea { min-height: 44px; } }
-</style>
+<?php require_once '../../includes/footer.php'; ?>
+
+<script src="../../assets/js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="../../assets/js/common.js"></script>
+<script src="../../assets/js/api-client.js"></script>
 
 <script>
-let anticipoActual = 0;
+const trabajoId = <?php echo $trabajo_id; ?>;
+let trabajoOriginal = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    cargarDatosTrabajo();
-    cargarOrfebres();
-});
-
-function cargarDatosTrabajo() {
-    const trabajoId = <?php echo $trabajo_id; ?>;
-    
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/taller/ver.php?id=' + trabajoId)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                llenarFormulario(data.data);
-                mostrarInfoTrabajo(data.data);
-            } else {
-                mostrarError(data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarError('Error al cargar los datos');
-        });
-    */
-    
-    setTimeout(() => mostrarError('MODO DESARROLLO: Esperando API'), 1500);
+async function cargarTrabajo() {
+    try {
+        mostrarCargando();
+        
+        const res = await fetch(`/joyeria-torre-fuerte/api/taller/detalle.php?id=${trabajoId}`);
+        const data = await res.json();
+        
+        if (!data.success) {
+            ocultarCargando();
+            await mostrarError(data.message || 'Trabajo no encontrado');
+            window.location.href = 'lista.php';
+            return;
+        }
+        
+        trabajoOriginal = data.data.trabajo;
+        
+        // Verificar si se puede editar
+        if (trabajoOriginal.estado === 'entregado' || trabajoOriginal.estado === 'cancelado') {
+            ocultarCargando();
+            await mostrarError('No se puede editar un trabajo entregado o cancelado');
+            window.location.href = 'ver.php?id=' + trabajoId;
+            return;
+        }
+        
+        cargarDatos(trabajoOriginal);
+        
+        ocultarCargando();
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error al cargar trabajo');
+    }
 }
 
-function cargarOrfebres() {
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/empleados/lista.php?rol=orfebre')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const select = document.getElementById('empleado_actual_id');
-                data.data.forEach(emp => {
-                    const option = document.createElement('option');
-                    option.value = emp.id;
-                    option.textContent = emp.nombre;
-                    select.appendChild(option);
-                });
-            }
-        });
-    */
-}
-
-function llenarFormulario(trabajo) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
+function cargarDatos(t) {
+    document.getElementById('codigoTrabajo').textContent = t.codigo;
     
-    document.getElementById('trabajoCodigo').textContent = 'Código: ' + trabajo.codigo;
-    document.getElementById('cliente_nombre').value = trabajo.cliente_nombre;
-    document.getElementById('cliente_telefono').value = trabajo.cliente_telefono;
-    document.getElementById('estado').value = trabajo.estado;
-    document.getElementById('empleado_actual_id').value = trabajo.empleado_actual_id;
-    document.getElementById('fecha_entrega_prometida').value = trabajo.fecha_entrega_prometida;
-    document.getElementById('descripcion_trabajo').value = trabajo.descripcion_trabajo;
-    document.getElementById('observaciones').value = trabajo.observaciones || '';
-    document.getElementById('precio_total').value = trabajo.precio_total;
+    // Cliente
+    document.getElementById('cliente_nombre').value = t.cliente_nombre;
+    document.getElementById('cliente_telefono').value = t.cliente_telefono;
     
-    anticipoActual = parseFloat(trabajo.anticipo);
-    document.getElementById('anticipo_display').value = anticipoActual.toFixed(2);
+    // Pieza
+    document.getElementById('material').value = t.material;
+    document.getElementById('peso_gramos').value = t.peso_gramos || '';
+    document.getElementById('largo_cm').value = t.largo_cm || '';
+    document.getElementById('estilo').value = t.estilo || '';
+    
+    if (t.con_piedra == 1) {
+        document.getElementById('con_piedra_si').checked = true;
+    } else {
+        document.getElementById('con_piedra_no').checked = true;
+    }
+    
+    document.getElementById('descripcion_pieza').value = t.descripcion_pieza;
+    
+    // Trabajo
+    document.getElementById('tipo_trabajo').value = t.tipo_trabajo;
+    document.getElementById('descripcion_trabajo').value = t.descripcion_trabajo;
+    document.getElementById('observaciones').value = t.observaciones || '';
+    
+    // Fechas
+    document.getElementById('fechaRecepcion').textContent = formatearFechaHora(t.fecha_recepcion);
+    document.getElementById('fecha_entrega_prometida').value = t.fecha_entrega_prometida;
+    
+    // Precios
+    document.getElementById('precio_total').value = t.precio_total;
+    document.getElementById('anticipo').value = t.anticipo || 0;
+    
+    // Estado
+    const estadoTextos = {
+        'recibido': 'Recibido',
+        'en_proceso': 'En Proceso',
+        'completado': 'Completado'
+    };
+    
+    const estadoBadges = {
+        'recibido': 'badge bg-warning text-dark',
+        'en_proceso': 'badge bg-primary',
+        'completado': 'badge bg-success'
+    };
+    
+    const estadoEl = document.getElementById('estadoActual');
+    estadoEl.textContent = estadoTextos[t.estado] || t.estado;
+    estadoEl.className = estadoBadges[t.estado] || 'badge bg-secondary';
     
     calcularSaldo();
-    
-    if (trabajo.estado === 'entregado') {
-        document.getElementById('fechaEntregaRealContainer').style.display = 'block';
-        document.getElementById('fecha_entrega_real').required = true;
-        if (trabajo.fecha_entrega_real) {
-            document.getElementById('fecha_entrega_real').value = trabajo.fecha_entrega_real.replace(' ', 'T');
-        }
-    }
 }
-
-function mostrarInfoTrabajo(trabajo) {
-    const iconosMaterial = { 'oro': '🟡', 'plata': '⚪', 'otro': '⚫' };
-    
-    document.getElementById('infoTrabajo').innerHTML = `
-        <p><strong>Fecha de Recepción:</strong><br>${formatearFecha(trabajo.fecha_recepcion)}</p>
-        <p><strong>Pieza:</strong><br>${trabajo.descripcion_pieza}</p>
-        <p><strong>Material:</strong><br>${iconosMaterial[trabajo.material] || ''} ${trabajo.material.charAt(0).toUpperCase() + trabajo.material.slice(1)}${trabajo.peso_gramos ? ' (' + trabajo.peso_gramos + 'g)' : ''}</p>
-        <p><strong>Tipo de Trabajo:</strong><br>${trabajo.tipo_trabajo.charAt(0).toUpperCase() + trabajo.tipo_trabajo.slice(1)}</p>
-    `;
-}
-
-document.getElementById('estado').addEventListener('change', function() {
-    const container = document.getElementById('fechaEntregaRealContainer');
-    if (this.value === 'entregado') {
-        container.style.display = 'block';
-        document.getElementById('fecha_entrega_real').required = true;
-    } else {
-        container.style.display = 'none';
-        document.getElementById('fecha_entrega_real').required = false;
-    }
-});
 
 function calcularSaldo() {
-    const precio = parseFloat(document.getElementById('precio_total').value) || 0;
-    const saldo = precio - anticipoActual;
-    document.getElementById('saldo').value = saldo.toFixed(2);
+    const total = parseFloat(document.getElementById('precio_total').value) || 0;
+    const anticipo = parseFloat(document.getElementById('anticipo').value) || 0;
+    const saldo = total - anticipo;
+    
+    document.getElementById('saldoCalculado').textContent = formatearMoneda(saldo);
 }
 
 document.getElementById('precio_total').addEventListener('input', calcularSaldo);
+document.getElementById('anticipo').addEventListener('input', calcularSaldo);
 
-document.getElementById('formTrabajo').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const datos = {
-        id: formData.get('id'),
-        estado: formData.get('estado'),
-        empleado_actual_id: formData.get('empleado_actual_id'),
-        fecha_entrega_prometida: formData.get('fecha_entrega_prometida'),
-        fecha_entrega_real: formData.get('fecha_entrega_real') || null,
-        descripcion_trabajo: formData.get('descripcion_trabajo'),
-        observaciones: formData.get('observaciones') || null,
-        precio_total: parseFloat(formData.get('precio_total'))
-    };
-    
-    const btnGuardar = document.getElementById('btnGuardar');
-    btnGuardar.disabled = true;
-    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
-    
-    /* TODO FASE 5: Descomentar
-    fetch('<?php echo BASE_URL; ?>api/taller/actualizar.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Trabajo actualizado exitosamente');
-            setTimeout(() => window.location.href = 'ver.php?id=' + datos.id, 1500);
-        } else {
-            alert(data.message);
-            btnGuardar.disabled = false;
-            btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Cambios';
-        }
-    });
-    */
-    
-    console.log('Datos:', datos);
-    setTimeout(() => {
-        alert('MODO DESARROLLO: Cambios listos.\n\n' + JSON.stringify(datos, null, 2));
-        btnGuardar.disabled = false;
-        btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Cambios';
-    }, 1000);
+// Validar teléfono
+document.getElementById('cliente_telefono').addEventListener('input', function() {
+    this.value = this.value.replace(/[^0-9-]/g, '');
 });
 
-function mostrarError(mensaje) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMessage').textContent = mensaje;
-}
+// Submit
+document.getElementById('formTrabajo').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const conPiedra = document.querySelector('input[name="con_piedra"]:checked')?.value;
+    
+    if (!conPiedra) {
+        mostrarError('Seleccione si tiene piedra o no');
+        return;
+    }
+    
+    const datos = {
+        id: trabajoId,
+        cliente_nombre: document.getElementById('cliente_nombre').value.trim(),
+        cliente_telefono: document.getElementById('cliente_telefono').value.trim(),
+        material: document.getElementById('material').value,
+        peso_gramos: document.getElementById('peso_gramos').value || null,
+        largo_cm: document.getElementById('largo_cm').value || null,
+        con_piedra: parseInt(conPiedra),
+        estilo: document.getElementById('estilo').value.trim() || null,
+        descripcion_pieza: document.getElementById('descripcion_pieza').value.trim(),
+        tipo_trabajo: document.getElementById('tipo_trabajo').value,
+        descripcion_trabajo: document.getElementById('descripcion_trabajo').value.trim(),
+        precio_total: parseFloat(document.getElementById('precio_total').value),
+        anticipo: parseFloat(document.getElementById('anticipo').value) || 0,
+        fecha_entrega_prometida: document.getElementById('fecha_entrega_prometida').value,
+        observaciones: document.getElementById('observaciones').value.trim() || null
+    };
+    
+    // Validaciones
+    if (!datos.cliente_nombre || !datos.cliente_telefono) {
+        mostrarError('Complete los datos del cliente');
+        return;
+    }
+    
+    if (!datos.material || !datos.descripcion_pieza) {
+        mostrarError('Complete la descripción de la pieza');
+        return;
+    }
+    
+    if (!datos.tipo_trabajo || !datos.descripcion_trabajo) {
+        mostrarError('Complete la descripción del trabajo');
+        return;
+    }
+    
+    if (!datos.precio_total || datos.precio_total <= 0) {
+        mostrarError('Ingrese un precio total válido');
+        return;
+    }
+    
+    if (!datos.fecha_entrega_prometida) {
+        mostrarError('Ingrese la fecha de entrega');
+        return;
+    }
+    
+    const confirmacion = await confirmarAccion('¿Guardar los cambios?');
+    if (!confirmacion) return;
+    
+    try {
+        mostrarCargando();
+        
+        const res = await fetch('/joyeria-torre-fuerte/api/taller/actualizar.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        });
+        
+        const resultado = await res.json();
+        
+        ocultarCargando();
+        
+        if (resultado.success) {
+            await mostrarExito('Trabajo actualizado exitosamente');
+            window.location.href = 'ver.php?id=' + trabajoId;
+        } else {
+            mostrarError(resultado.message || 'Error al actualizar trabajo');
+        }
+        
+    } catch (error) {
+        ocultarCargando();
+        console.error('Error:', error);
+        mostrarError('Error: ' + error.message);
+    }
+});
 
-function formatearFecha(fecha) {
-    const d = new Date(fecha);
-    return d.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-function imprimirOrden() { alert('MODO DESARROLLO: Imprimir orden - Pendiente implementar'); }
+document.addEventListener('DOMContentLoaded', cargarTrabajo);
 </script>
-
-<?php include '../../includes/footer.php'; ?>
