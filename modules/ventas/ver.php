@@ -290,7 +290,6 @@ require_once '../../includes/navbar.php';
     
     <div class="ticket-footer">
         <div>Gracias por su compra</div>
-        <div>www.joyeriatf.com</div>
     </div>
 </div>
 
@@ -469,20 +468,32 @@ function mostrarCredito(credito) {
     document.getElementById('creditoProximoPago').textContent = formatearFecha(credito.fecha_proximo_pago);
 }
 
+function limpiarCaracteres(texto) {
+    if (!texto) return '';
+    return texto
+        .replace(/á/g, 'a').replace(/Á/g, 'A')
+        .replace(/é/g, 'e').replace(/É/g, 'E')
+        .replace(/í/g, 'i').replace(/Í/g, 'I')
+        .replace(/ó/g, 'o').replace(/Ó/g, 'O')
+        .replace(/ú/g, 'u').replace(/Ú/g, 'U')
+        .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+        .replace(/ñ/g, 'n').replace(/Ñ/g, 'N');
+}
+
 function prepararTicket(venta) {
-    document.getElementById('ticket-sucursal').textContent = venta.sucursal_nombre || '';
+    document.getElementById('ticket-sucursal').textContent = limpiarCaracteres(venta.sucursal_nombre || '');
     
     const fechaHora = venta.fecha && venta.hora ? venta.fecha + ' ' + venta.hora : '';
     document.getElementById('ticket-fecha').textContent = formatearFechaHora(fechaHora);
     document.getElementById('ticket-numero').textContent = venta.numero_venta || '';
-    document.getElementById('ticket-cliente').textContent = 'Cliente: ' + (venta.cliente_nombre || 'Publico General');
-    document.getElementById('ticket-vendedor').textContent = 'Vendedor: ' + (venta.vendedor_nombre || '-');
+    document.getElementById('ticket-cliente').textContent = limpiarCaracteres('Cliente: ' + (venta.cliente_nombre || 'Publico General'));
+    document.getElementById('ticket-vendedor').textContent = limpiarCaracteres('Vendedor: ' + (venta.vendedor_nombre || '-'));
     
     let productosHtml = '';
     const productos = venta.productos || [];
     productos.forEach(p => {
         productosHtml += '<div class="ticket-item">';
-        productosHtml += '<div>' + escaparHTML(p.producto_nombre || p.nombre || '-') + '</div>';
+        productosHtml += '<div>' + limpiarCaracteres(p.producto_nombre || p.nombre || '-') + '</div>';
         productosHtml += '<div style="display: flex; justify-content: space-between;">';
         productosHtml += '<span>' + (p.cantidad || 0) + ' x ' + formatearMoneda(p.precio_unitario || 0) + '</span>';
         productosHtml += '<span>' + formatearMoneda(p.subtotal || 0) + '</span>';
@@ -504,7 +515,7 @@ function prepararTicket(venta) {
         let fpHtml = '';
         venta.formas_pago.forEach(fp => {
             fpHtml += '<div style="display: flex; justify-content: space-between;">';
-            fpHtml += '<span>' + obtenerNombreFormaPago(fp.forma_pago) + ':</span>';
+            fpHtml += '<span>' + limpiarCaracteres(obtenerNombreFormaPago(fp.forma_pago)) + ':</span>';
             fpHtml += '<span>' + formatearMoneda(fp.monto) + '</span>';
             fpHtml += '</div>';
         });
@@ -512,13 +523,122 @@ function prepararTicket(venta) {
     }
 }
 
+function centrar(texto, ancho) {
+    texto = String(texto || '');
+    if (texto.length >= ancho) return texto;
+    const espacios = Math.floor((ancho - texto.length) / 2);
+    return ' '.repeat(espacios) + texto;
+}
+
+function dosColumnas(izq, der, ancho) {
+    izq = String(izq || '');
+    der = String(der || '');
+    const espacios = ancho - izq.length - der.length;
+    if (espacios < 1) return izq + ' ' + der;
+    return izq + ' '.repeat(espacios) + der;
+}
+
+function lineaSeparadora(caracter, ancho) {
+    return (caracter || '-').repeat(ancho);
+}
+
 function imprimirTicket() {
-    console.log('Imprimiendo ticket...');
-    document.getElementById('ticket-print').style.display = 'block';
-    window.print();
+    if (!ventaData) return;
+    const v = ventaData;
+    const ANCHO = 42;
+
+    const fechaHora = v.fecha && v.hora ? v.fecha + ' ' + v.hora : '';
+    const fechaStr = formatearFechaHora(fechaHora);
+
+    let lineas = [];
+
+    // Encabezado centrado
+    lineas.push(centrar('JOYERIA TORRE FUERTE', ANCHO));
+    lineas.push(centrar(limpiarCaracteres(v.sucursal_nombre || ''), ANCHO));
+    lineas.push(centrar(fechaStr, ANCHO));
+    lineas.push(lineaSeparadora('-', ANCHO));
+
+    // Info venta
+    lineas.push('VENTA #' + (v.numero_venta || ''));
+    lineas.push('Cliente: ' + limpiarCaracteres(v.cliente_nombre || 'Publico General'));
+    lineas.push('Vendedor: ' + limpiarCaracteres(v.vendedor_nombre || '-'));
+    lineas.push(lineaSeparadora('-', ANCHO));
+
+    // Productos
+    const productos = v.productos || [];
+    productos.forEach(p => {
+        const nombre = limpiarCaracteres(p.producto_nombre || p.nombre || '-');
+        if (nombre.length > ANCHO) {
+            lineas.push(nombre.substring(0, ANCHO));
+            lineas.push(nombre.substring(ANCHO));
+        } else {
+            lineas.push(nombre);
+        }
+        const cant = (p.cantidad || 0) + ' x ' + formatearMoneda(p.precio_unitario || 0);
+        const sub = formatearMoneda(p.subtotal || 0);
+        lineas.push(dosColumnas(cant, sub, ANCHO));
+    });
+    lineas.push(lineaSeparadora('-', ANCHO));
+
+    // Totales
+    lineas.push(dosColumnas('Subtotal:', formatearMoneda(v.subtotal || 0), ANCHO));
+    lineas.push(dosColumnas('Descuento:', formatearMoneda(v.descuento || 0), ANCHO));
+    lineas.push(dosColumnas('TOTAL:', formatearMoneda(v.total || 0), ANCHO));
+
+    // Formas de pago
+    if (v.tipo_venta === 'normal' && v.formas_pago && v.formas_pago.length > 0) {
+        lineas.push(lineaSeparadora('-', ANCHO));
+        lineas.push('Formas de Pago:');
+        v.formas_pago.forEach(fp => {
+            lineas.push(dosColumnas(
+                limpiarCaracteres(obtenerNombreFormaPago(fp.forma_pago)) + ':',
+                formatearMoneda(fp.monto),
+                ANCHO
+            ));
+        });
+    }
+
+    // Footer
+    lineas.push(lineaSeparadora('-', ANCHO));
+    lineas.push(centrar('Gracias por su compra', ANCHO));
+    lineas.push('');
+    lineas.push('');
+    lineas.push('');
+
+    // Escapar caracteres HTML para evitar que el navegador interprete algo
+    const contenido = lineas.join('\n')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const ventana = window.open('', '_blank', 'width=420,height=600');
+    ventana.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 72mm; margin: 0; padding: 0; }
+    body {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 10pt;
+        line-height: 1.3;
+        white-space: pre;
+    }
+    @media print {
+        html, body { width: 72mm; margin: 0; padding: 0; }
+        @page { margin: 0; padding: 0; size: 80mm auto; }
+    }
+</style>
+</head>
+<body>${contenido}</body>
+</html>`);
+    ventana.document.close();
+    ventana.focus();
     setTimeout(() => {
-        document.getElementById('ticket-print').style.display = 'none';
-    }, 100);
+        ventana.print();
+        ventana.close();
+    }, 400);
 }
 
 async function anularVenta() {
