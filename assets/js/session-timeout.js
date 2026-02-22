@@ -197,7 +197,7 @@
         }
 
         // Hacer ping al servidor para renovar la sesión PHP
-        fetch('/joyeria-torre-fuerte/api/auth/ping.php', {
+        fetch('/api/auth/ping.php', {
             method: 'POST',
             credentials: 'same-origin'
         }).catch(function () {

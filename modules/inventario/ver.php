@@ -258,7 +258,7 @@ function mostrarDatos(prod) {
 async function cargarStock() {
     try {
         const params = new URLSearchParams({ producto_id: productoId });
-        const res = await fetch(`/joyeria-torre-fuerte/api/inventario/listar.php?${params}`);
+        const res = await fetch(`/api/inventario/listar.php?${params}`);
         const data = await res.json();
         
         const container = document.getElementById('stockPorSucursal');
@@ -314,7 +314,7 @@ async function cargarMovimientos() {
             limit: 20
         });
         
-        const res = await fetch(`/joyeria-torre-fuerte/api/movimientos_inventario/listar.php?${params}`);
+        const res = await fetch(`/api/movimientos_inventario/listar.php?${params}`);
         const data = await res.json();
         
         const tbody = document.getElementById('tablaMovimientos');

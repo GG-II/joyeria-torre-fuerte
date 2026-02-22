@@ -274,7 +274,7 @@ require_once '../../includes/navbar.php';
 <script>
 async function cargarEmpleados() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/usuarios/listar.php?activo=1');
+        const res = await fetch('/api/usuarios/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) return;
@@ -341,7 +341,7 @@ document.getElementById('buscar_cliente_modal').addEventListener('input', functi
 
 async function buscarClientesModal(busqueda) {
     try {
-        const res = await fetch(`/joyeria-torre-fuerte/api/clientes/listar.php?buscar=${encodeURIComponent(busqueda)}&limite=15`);
+        const res = await fetch(`/api/clientes/listar.php?buscar=${encodeURIComponent(busqueda)}&limite=15`);
         const data = await res.json();
         
         const container = document.getElementById('resultadosClientesModal');
@@ -556,7 +556,7 @@ document.getElementById('formTrabajo').addEventListener('submit', async function
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/crear.php', {
+        const res = await fetch('/api/taller/crear.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)

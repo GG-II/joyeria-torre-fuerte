@@ -187,7 +187,7 @@ async function cargarProductosOrigen(sucursalId) {
             por_pagina: 500
         });
         
-        const res = await fetch(`/joyeria-torre-fuerte/api/inventario/listar.php?${params}`);
+        const res = await fetch(`/api/inventario/listar.php?${params}`);
         const data = await res.json();
         
         ocultarCargando();
@@ -234,7 +234,7 @@ async function cargarTransferenciasRecientes() {
             limit: 10
         });
         
-        const res = await fetch(`/joyeria-torre-fuerte/api/movimientos_inventario/listar.php?${params}`);
+        const res = await fetch(`/api/movimientos_inventario/listar.php?${params}`);
         
         if (!res.ok) {
             throw new Error('Error HTTP: ' + res.status);
@@ -384,7 +384,7 @@ document.getElementById('formTransferencia').addEventListener('submit', async fu
         formData.append('cantidad', cantidad);
         formData.append('motivo', motivo);
         
-        const res = await fetch('/joyeria-torre-fuerte/api/inventario/transferir.php', {
+        const res = await fetch('/api/inventario/transferir.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()

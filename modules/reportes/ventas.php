@@ -392,7 +392,7 @@ async function cargarVentasDiarias() {
         const fecha = document.getElementById('fechaDiario').value;
         const sucursalId = document.getElementById('sucursalDiario').value;
         
-        let url = '/joyeria-torre-fuerte/api/reportes/ventas.php?tipo=diario&fecha=' + fecha;
+        let url = '/api/reportes/ventas.php?tipo=diario&fecha=' + fecha;
         if (sucursalId) url += '&sucursal_id=' + sucursalId;
         
         const res = await fetch(url);
@@ -456,7 +456,7 @@ async function cargarVentasMensuales() {
         const mes = document.getElementById('mesMensual').value;
         const anio = document.getElementById('anioMensual').value;
         
-        const url = '/joyeria-torre-fuerte/api/reportes/ventas.php?tipo=mensual&mes=' + mes + '&año=' + anio;
+        const url = '/api/reportes/ventas.php?tipo=mensual&mes=' + mes + '&año=' + anio;
         
         const res = await fetch(url);
         const data = await res.json();
@@ -497,7 +497,7 @@ async function cargarVentasPorVendedor() {
         const fechaInicio = document.getElementById('fechaInicioVendedor').value;
         const fechaFin = document.getElementById('fechaFinVendedor').value;
         
-        const url = '/joyeria-torre-fuerte/api/reportes/ventas.php?tipo=vendedor&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
+        const url = '/api/reportes/ventas.php?tipo=vendedor&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
         
         const res = await fetch(url);
         const data = await res.json();
@@ -552,7 +552,7 @@ async function cargarVentasPorSucursal() {
         const fechaInicio = document.getElementById('fechaInicioSucursal').value;
         const fechaFin = document.getElementById('fechaFinSucursal').value;
         
-        const url = '/joyeria-torre-fuerte/api/reportes/ventas.php?tipo=sucursal&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
+        const url = '/api/reportes/ventas.php?tipo=sucursal&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
         
         const res = await fetch(url);
         const data = await res.json();
@@ -602,7 +602,7 @@ function mostrarVentasPorSucursal(datos) {
 
 async function cargarSucursales() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/sucursales/listar.php?activo=1');
+        const res = await fetch('/api/sucursales/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) return;

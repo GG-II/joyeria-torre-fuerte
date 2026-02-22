@@ -318,7 +318,7 @@ async function cargarProducto() {
 async function cargarStock() {
     try {
         const params = new URLSearchParams({ producto_id: productoId });
-        const res = await fetch(`/joyeria-torre-fuerte/api/inventario/listar.php?${params}`);
+        const res = await fetch(`/api/inventario/listar.php?${params}`);
         const data = await res.json();
         
         const container = document.getElementById('stockPorSucursal');
@@ -416,7 +416,7 @@ document.getElementById('formProducto').addEventListener('submit', async functio
             }
         });
         
-        const res = await fetch('/joyeria-torre-fuerte/api/productos/actualizar.php', {
+        const res = await fetch('/api/productos/actualizar.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()
@@ -484,7 +484,7 @@ document.getElementById('btnAjustarStock').addEventListener('click', async funct
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/inventario/ajustar_stock.php', {
+        const res = await fetch('/api/inventario/ajustar_stock.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData.toString()

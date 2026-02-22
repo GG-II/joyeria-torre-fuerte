@@ -184,7 +184,7 @@ async function cargarInventario() {
         mostrarCargando();
         
         const sucursalId = document.getElementById('filtroSucursal').value;
-        let url = '/joyeria-torre-fuerte/api/reportes/inventario.php';
+        let url = '/api/reportes/inventario.php';
         
         if (sucursalId) {
             url += '?sucursal_id=' + sucursalId;
@@ -350,7 +350,7 @@ function filtrarInventario() {
 
 async function cargarSucursales() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/sucursales/listar.php?activo=1');
+        const res = await fetch('/api/sucursales/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) return;

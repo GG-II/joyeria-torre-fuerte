@@ -178,15 +178,6 @@
                                 Historial de Cajas
                             </a>
                         </li>
-                        <?php if (tiene_permiso('caja', 'crear')): ?>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/caja/abrir.php">
-                                <i class="bi bi-box-arrow-in-down"></i>
-                                Abrir Caja
-                            </a>
-                        </li>
-                        <?php endif; ?>
                     </ul>
                 </li>
                 <?php endif; ?>
@@ -283,12 +274,6 @@
                             <a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/configuracion/sucursales.php">
                                 <i class="bi bi-building"></i>
                                 Sucursales
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="<?php echo BASE_URL; ?>modules/configuracion/permisos.php">
-                                <i class="bi bi-shield-check"></i>
-                                Roles y Permisos
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>

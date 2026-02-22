@@ -1,6 +1,6 @@
 <?php
 // ================================================
-// PÁGINA DE LOGIN
+// PAGINA DE LOGIN
 // ================================================
 
 require_once 'config.php';
@@ -8,7 +8,7 @@ require_once 'includes/db.php';
 require_once 'includes/funciones.php';
 require_once 'includes/auth.php';
 
-// Si ya está autenticado, redirigir al dashboard
+// Si ya esta autenticado, redirigir al dashboard
 if (esta_autenticado()) {
     redirigir('dashboard.php');
 }
@@ -30,13 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mensaje_exito('Bienvenido, ' . $usuario['nombre']);
             redirigir('dashboard.php');
         } else {
-            $error = 'Email o contraseña incorrectos';
+            $error = 'Email o contrasena incorrectos';
         }
     }
 }
 
-// Título de página
-$titulo_pagina = 'Iniciar Sesión';
+$titulo_pagina = 'Iniciar Sesion';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -46,19 +45,11 @@ $titulo_pagina = 'Iniciar Sesión';
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title><?php echo $titulo_pagina; ?> - <?php echo SISTEMA_NOMBRE; ?></title>
     
-    <!-- Bootstrap CSS Local -->
     <link href="<?php echo BASE_URL; ?>assets/css/bootstrap/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons Local -->
     <link href="<?php echo BASE_URL; ?>assets/css/bootstrap-icons/bootstrap-icons.min.css" rel="stylesheet">
-    
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
-    
-    <!-- CSS Personalizado -->
     <link href="<?php echo BASE_URL; ?>assets/css/custom.css" rel="stylesheet">
     
-    <!-- Estilos específicos del login -->
     <style>
         body {
             background: linear-gradient(135deg, var(--color-azul) 0%, #0f172a 100%);
@@ -70,16 +61,11 @@ $titulo_pagina = 'Iniciar Sesión';
             overflow: hidden;
         }
         
-        /* Patrón de fondo elegante */
         body::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(212, 175, 55, 0.03) 35px, rgba(212, 175, 55, 0.03) 70px);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(212, 175, 55, 0.03) 35px, rgba(212, 175, 55, 0.03) 70px);
             pointer-events: none;
         }
         
@@ -180,37 +166,18 @@ $titulo_pagina = 'Iniciar Sesión';
             box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
             color: var(--color-blanco);
         }
-        
-        .demo-credentials {
-            background: #eff6ff;
-            border-left: 4px solid var(--color-azul);
-            padding: 15px;
-            border-radius: 6px;
-            margin-top: 20px;
-            font-size: 13px;
+
+        .btn-ver-password {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-left: none;
+            cursor: pointer;
+            padding: 0 14px;
+            transition: background 0.2s;
         }
-        
-        .demo-credentials strong {
-            color: var(--color-azul);
-            display: block;
-            margin-bottom: 10px;
-        }
-        
-        .demo-credentials .credential-item {
-            background: var(--color-blanco);
-            padding: 8px 12px;
-            border-radius: 4px;
-            margin-bottom: 6px;
-            border: 1px solid #dbeafe;
-        }
-        
-        .demo-credentials code {
-            background: #1e3a8a;
-            color: var(--color-dorado);
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 12px;
+
+        .btn-ver-password:hover {
+            background: #e5e7eb;
         }
         
         .login-footer {
@@ -245,7 +212,7 @@ $titulo_pagina = 'Iniciar Sesión';
                 <?php endif; ?>
             </div>
             <h2><?php echo SISTEMA_NOMBRE; ?></h2>
-            <p>Sistema de Gestión Integral</p>
+            <p>Sistema de Gestion Integral</p>
         </div>
         
         <div class="login-body">
@@ -269,7 +236,7 @@ $titulo_pagina = 'Iniciar Sesión';
             <form method="POST" action="">
                 <div class="mb-3">
                     <label for="email" class="form-label">
-                        <i class="bi bi-envelope me-1"></i> Correo Electrónico
+                        <i class="bi bi-envelope me-1"></i> Correo Electronico
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -290,7 +257,7 @@ $titulo_pagina = 'Iniciar Sesión';
                 
                 <div class="mb-4">
                     <label for="password" class="form-label">
-                        <i class="bi bi-lock me-1"></i> Contraseña
+                        <i class="bi bi-lock me-1"></i> Contrasena
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -304,26 +271,42 @@ $titulo_pagina = 'Iniciar Sesión';
                             placeholder="••••••••"
                             required
                         >
+                        <button type="button" class="btn-ver-password" onclick="togglePassword()" title="Ver contrasena">
+                            <i class="bi bi-eye" id="iconoPassword"></i>
+                        </button>
                     </div>
                 </div>
                 
                 <button type="submit" class="btn btn-login">
                     <i class="bi bi-box-arrow-in-right me-2"></i>
-                    Iniciar Sesión
+                    Iniciar Sesion
                 </button>
             </form>
-            
         </div>
         
         <div class="login-footer">
             <span class="security-badge">
                 <i class="bi bi-shield-check"></i>
-                Sistema protegido - Versión <?php echo SISTEMA_VERSION; ?>
+                Sistema protegido - Version <?php echo SISTEMA_VERSION; ?>
             </span>
         </div>
     </div>
     
-    <!-- Bootstrap JS Local -->
     <script src="<?php echo BASE_URL; ?>assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    
+    <script>
+    function togglePassword() {
+        const input = document.getElementById('password');
+        const icono = document.getElementById('iconoPassword');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icono.className = 'bi bi-eye-slash';
+        } else {
+            input.type = 'password';
+            icono.className = 'bi bi-eye';
+        }
+    }
+    </script>
 </body>
 </html>

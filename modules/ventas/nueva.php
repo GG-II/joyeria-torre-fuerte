@@ -374,7 +374,7 @@ function configurarEventos() {
 // ============================================
 async function cargarSucursales() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/sucursales/listar.php?activo=1');
+        const res = await fetch('/api/sucursales/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) {
@@ -491,7 +491,7 @@ async function buscarProductos() {
     try {
         mostrarCargando();
         
-        const url = '/joyeria-torre-fuerte/api/productos/buscar-con-stock.php?termino=' + 
+        const url = '/api/productos/buscar-con-stock.php?termino=' + 
                     encodeURIComponent(termino) + 
                     '&sucursal_id=' + sucursalActual.id +
                     '&limite=20';
@@ -985,7 +985,7 @@ function buscarClientesConDelay() {
 
 async function buscarClientesPos(busqueda) {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/clientes/listar.php?buscar=' + encodeURIComponent(busqueda) + '&limite=15');
+        const res = await fetch('/api/clientes/listar.php?buscar=' + encodeURIComponent(busqueda) + '&limite=15');
         const data = await res.json();
         
         const container = document.getElementById('resultadosClientesPos');
@@ -1262,7 +1262,7 @@ async function procesarVenta(event) {
         console.log('🌐 Enviando request a API...');
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/ventas/crear.php', {
+        const res = await fetch('/api/ventas/crear.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)

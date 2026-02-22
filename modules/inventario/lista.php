@@ -259,7 +259,7 @@ async function cargarProductos() {
         if (sucId) params.append('sucursal_id', sucId);
         params.append('por_pagina', '500');
         
-        const res = await fetch(`/joyeria-torre-fuerte/api/inventario/listar.php?${params}`);
+        const res = await fetch(`/api/inventario/listar.php?${params}`);
         const resultado = await res.json();
         
         if (!resultado.success) {

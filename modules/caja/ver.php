@@ -200,7 +200,7 @@ async function cargarCaja() {
         mostrarCargando();
         
         // Cargar datos de la caja
-        const res = await fetch(`/joyeria-torre-fuerte/api/caja/listar.php?limite=1000`);
+        const res = await fetch(`/api/caja/listar.php?limite=1000`);
         const data = await res.json();
         
         if (!data.success) {
@@ -286,7 +286,7 @@ function mostrarDatos(c) {
 
 async function cargarMovimientos() {
     try {
-        const res = await fetch(`/joyeria-torre-fuerte/api/caja/movimientos.php?caja_id=${cajaId}`);
+        const res = await fetch(`/api/caja/movimientos.php?caja_id=${cajaId}`);
         const data = await res.json();
         
         if (!data.success) {

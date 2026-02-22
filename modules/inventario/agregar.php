@@ -336,7 +336,7 @@ document.getElementById('formProducto').addEventListener('submit', async functio
         formDataProducto.append('stock_chinaca', sucursalId == 2 ? cantidadInicial : 0);
         formDataProducto.append('stock_minimo', stockMinimo);
         
-        const resProducto = await fetch('/joyeria-torre-fuerte/api/productos/crear.php', {
+        const resProducto = await fetch('/api/productos/crear.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formDataProducto.toString()

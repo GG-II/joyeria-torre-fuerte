@@ -186,7 +186,7 @@ async function cargarDatos() {
         mostrarCargando();
         
         // Cargar trabajo
-        const res = await fetch(`/joyeria-torre-fuerte/api/taller/detalle.php?id=${trabajoId}`);
+        const res = await fetch(`/api/taller/detalle.php?id=${trabajoId}`);
         const data = await res.json();
         
         if (!data.success) {
@@ -311,7 +311,7 @@ function mostrarHistorial(historial) {
 
 async function cargarEmpleados() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/usuarios/listar.php?activo=1');
+        const res = await fetch('/api/usuarios/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) return;
@@ -359,7 +359,7 @@ document.getElementById('formTransferencia').addEventListener('submit', async fu
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/transferir.php', {
+        const res = await fetch('/api/taller/transferir.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

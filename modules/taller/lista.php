@@ -210,7 +210,7 @@ async function cargarTrabajos() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/listar.php?por_pagina=500');
+        const res = await fetch('/api/taller/listar.php?por_pagina=500');
         const data = await res.json();
         
         ocultarCargando();

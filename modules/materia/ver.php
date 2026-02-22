@@ -217,7 +217,7 @@ async function cargarMateria() {
     try {
         mostrarCargando();
         
-        const res = await fetch(`/joyeria-torre-fuerte/api/materia_prima/listar.php`);
+        const res = await fetch(`/api/materia_prima/listar.php`);
         const data = await res.json();
         
         if (!data.success) {
@@ -363,7 +363,7 @@ document.getElementById('btnConfirmarAjuste')?.addEventListener('click', async f
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/materia_prima/ajustar_stock.php', {
+        const res = await fetch('/api/materia_prima/ajustar_stock.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -410,7 +410,7 @@ document.getElementById('btnCambiarEstado')?.addEventListener('click', async fun
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/materia_prima/cambiar_estado.php', {
+        const res = await fetch('/api/materia_prima/cambiar_estado.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

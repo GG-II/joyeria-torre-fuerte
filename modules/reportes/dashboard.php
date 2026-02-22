@@ -233,7 +233,7 @@ async function cargarDashboard() {
         
         const fecha = document.getElementById('fechaDashboard').value;
         
-        const res = await fetch('/joyeria-torre-fuerte/api/reportes/dashboard.php?fecha=' + fecha);
+        const res = await fetch('/api/reportes/dashboard.php?fecha=' + fecha);
         const data = await res.json();
         
         ocultarCargando();

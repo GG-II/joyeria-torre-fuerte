@@ -11,7 +11,7 @@
 
 class APIClient {
     constructor() {
-        this.baseURL = '/joyeria-torre-fuerte/api';
+        this.baseURL = '/api';
     }
 
     /**
@@ -447,10 +447,10 @@ class APIClient {
      * Listar usuarios
      * @param {object} filtros - { rol, sucursal_id, activo }
      */
-    async listarUsuarios(filtros = {}) {
-        const params = new URLSearchParams(filtros);
-        return this.request(`/usuarios/listar.php?${params}`);
-    }
+async listarUsuarios(filtros = {}) {
+    const params = new URLSearchParams(filtros);
+    return this.request(`/usuarios/listar.php?${params}`);
+}
 
     /**
      * Crear usuario nuevo
@@ -495,10 +495,10 @@ class APIClient {
      * @param {string} password_actual - Contraseña actual
      * @param {string} password_nueva - Nueva contraseña
      */
-    async cambiarPasswordUsuario(id, password_actual, password_nueva) {
+    async cambiarPasswordUsuario(id, password_actual, password_nueva, password_confirmacion) {
         return this.request('/usuarios/cambiar_password.php', {
             method: 'POST',
-            body: JSON.stringify({ id, password_actual, password_nueva })
+            body: JSON.stringify({ id, password_actual, password_nueva, password_confirmacion })
         });
     }
 

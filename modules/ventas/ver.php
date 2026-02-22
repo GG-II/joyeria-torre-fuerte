@@ -313,7 +313,7 @@ async function cargarDetalleVenta() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/ventas/detalle.php?id=' + ventaId);
+        const res = await fetch('/api/ventas/detalle.php?id=' + ventaId);
         const data = await res.json();
         
         console.log('Respuesta API:', data);
@@ -557,7 +557,7 @@ async function anularVenta() {
         console.log('📤 Datos a enviar:', datos);
         console.log('📤 JSON stringified:', JSON.stringify(datos));
         
-        const res = await fetch('/joyeria-torre-fuerte/api/ventas/anular.php', {
+        const res = await fetch('/api/ventas/anular.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)

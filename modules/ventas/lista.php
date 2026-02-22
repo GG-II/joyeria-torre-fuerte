@@ -225,7 +225,7 @@ async function cargarVentas() {
         const tipoVenta = document.getElementById('filtroTipoVenta').value;
         const estado = document.getElementById('filtroEstado').value;
         
-        let url = '/joyeria-torre-fuerte/api/ventas/listar.php?pagina=' + paginaActual + '&por_pagina=20';
+        let url = '/api/ventas/listar.php?pagina=' + paginaActual + '&por_pagina=20';
         
         if (fechaInicio) url += '&fecha_inicio=' + fechaInicio;
         if (fechaFin) url += '&fecha_fin=' + fechaFin;
@@ -369,7 +369,7 @@ async function cargarEstadisticasDelDia() {
         
         console.log('📅 Rango de fechas:', fechaInicio, 'a', fechaFin);
         
-        const url = '/joyeria-torre-fuerte/api/ventas/reportes.php?tipo=rango&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
+        const url = '/api/ventas/reportes.php?tipo=rango&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
         console.log('🌐 URL:', url);
         
         const res = await fetch(url);
@@ -433,7 +433,7 @@ async function prepararAnulacion(ventaId) {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/ventas/detalle.php?id=' + ventaId);
+        const res = await fetch('/api/ventas/detalle.php?id=' + ventaId);
         const data = await res.json();
         
         console.log('📦 Detalle de venta para anular:', data);
@@ -578,7 +578,7 @@ async function confirmarAnulacion() {
         console.log('📤 Venta completa:', ventaAAnular);
         console.log('📤 JSON stringified:', JSON.stringify(datos));
         
-        const res = await fetch('/joyeria-torre-fuerte/api/ventas/anular.php', {
+        const res = await fetch('/api/ventas/anular.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)
@@ -622,7 +622,7 @@ async function confirmarAnulacion() {
 
 async function cargarSucursales() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/sucursales/listar.php?activo=1');
+        const res = await fetch('/api/sucursales/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) return;

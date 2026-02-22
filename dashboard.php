@@ -120,18 +120,18 @@ $nombre_usuario = explode(' ', usuario_actual_nombre())[0];
         </a>
         <?php endif; ?>
 
-        <?php if (tiene_permiso('reportes', 'ver')): ?>
-        <a href="<?php echo BASE_URL; ?>modules/reportes/dashboard.php" class="module-card reportes">
-            <div class="module-icon">
-                <i class="bi bi-graph-up"></i>
-            </div>
-            <h3 class="module-title">Reportes</h3>
-            <p class="module-description">Análisis y estadísticas</p>
-            <div class="module-arrow">
-                <i class="bi bi-arrow-right"></i>
-            </div>
-        </a>
-        <?php endif; ?>
+<?php if (in_array(usuario_actual_rol(), ['administrador', 'dueño', 'publicidad'])): ?>
+<a href="<?php echo BASE_URL; ?>modules/reportes/dashboard.php" class="module-card reportes">
+    <div class="module-icon">
+        <i class="bi bi-graph-up"></i>
+    </div>
+    <h3 class="module-title">Reportes</h3>
+    <p class="module-description">Análisis y estadísticas</p>
+    <div class="module-arrow">
+        <i class="bi bi-arrow-right"></i>
+    </div>
+</a>
+<?php endif; ?>
 
         <?php if (tiene_permiso('usuarios', 'ver') || tiene_permiso('sucursales', 'ver')): ?>
         <a href="<?php echo BASE_URL; ?>modules/configuracion/sistema.php" class="module-card configuracion">

@@ -236,7 +236,7 @@ document.getElementById('formMateria').addEventListener('submit', async function
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/materia_prima/crear.php', {
+        const res = await fetch('/api/materia_prima/crear.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)

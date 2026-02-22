@@ -341,7 +341,7 @@ async function init() {
 
 async function cargarCajasAbiertas() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/listar.php?estado=abierta');
+        const res = await fetch('/api/caja/listar.php?estado=abierta');
         const data = await res.json();
         
         if (!data.success) {
@@ -370,7 +370,7 @@ async function cargarCajasAbiertas() {
 
 async function cargarTotalesCaja(caja) {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/movimientos.php?caja_id=' + caja.id);
+        const res = await fetch('/api/caja/movimientos.php?caja_id=' + caja.id);
         const data = await res.json();
         
         if (!data.success) {
@@ -474,7 +474,7 @@ async function prepararCerrarCaja(cajaId) {
 
 async function cargarMovimientosCierre(cajaId) {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/movimientos.php?caja_id=' + cajaId);
+        const res = await fetch('/api/caja/movimientos.php?caja_id=' + cajaId);
         const data = await res.json();
         
         if (!data.success) {
@@ -517,7 +517,7 @@ async function cargarMovimientosCierre(cajaId) {
 
 async function cargarHistorial() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/listar.php');
+        const res = await fetch('/api/caja/listar.php');
         const data = await res.json();
         
         if (!data.success) {
@@ -626,7 +626,7 @@ function renderizarTabla(cajas) {
 
 async function cargarSucursales() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/sucursales/listar.php?activo=1');
+        const res = await fetch('/api/sucursales/listar.php?activo=1');
         const data = await res.json();
         
         if (!data.success) return;
@@ -650,7 +650,7 @@ async function cargarSucursales() {
 
 async function cargarUsuarios() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/usuarios/listar.php');
+        const res = await fetch('/api/usuarios/listar.php');
         const data = await res.json();
         
         if (!data.success) return;
@@ -683,7 +683,7 @@ async function abrirCaja() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/abrir_caja.php', {
+        const res = await fetch('/api/caja/abrir_caja.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -731,7 +731,7 @@ async function cerrarCaja() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/cerrar_caja.php', {
+        const res = await fetch('/api/caja/cerrar_caja.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

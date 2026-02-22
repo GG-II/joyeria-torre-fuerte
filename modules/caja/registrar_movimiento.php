@@ -187,7 +187,7 @@ async function init() {
 
 async function verificarCajaAbierta() {
     try {
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/caja_actual.php');
+        const res = await fetch('/api/caja/caja_actual.php');
         const data = await res.json();
         
         const container = document.getElementById('infoCajaActual');
@@ -311,7 +311,7 @@ async function registrarMovimiento(e) {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/caja/registrar-movimiento.php', {
+        const res = await fetch('/api/caja/registrar-movimiento.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

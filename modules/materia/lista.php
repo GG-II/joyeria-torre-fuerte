@@ -200,7 +200,7 @@ async function cargarMaterias() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/materia_prima/listar.php');
+        const res = await fetch('/api/materia_prima/listar.php');
         const data = await res.json();
         
         ocultarCargando();

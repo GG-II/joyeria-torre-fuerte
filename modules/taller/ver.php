@@ -228,7 +228,7 @@ async function cargarTrabajo() {
     try {
         mostrarCargando();
         
-        const res = await fetch(`/joyeria-torre-fuerte/api/taller/detalle.php?id=${trabajoId}`);
+        const res = await fetch(`/api/taller/detalle.php?id=${trabajoId}`);
         const data = await res.json();
         
         if (!data.success) {
@@ -429,7 +429,7 @@ async function cambiarEstado(nuevoEstado) {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/cambiar_estado.php', {
+        const res = await fetch('/api/taller/cambiar_estado.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -462,7 +462,7 @@ async function completarTrabajo() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/completar.php', {
+        const res = await fetch('/api/taller/completar.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: trabajoId })
@@ -500,7 +500,7 @@ async function registrarPagoSaldo(montoAPagar) {
         const nuevoAnticipo = anticipoActual + montoAPagar;
         
         // USAR EL NUEVO ENDPOINT
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/actualizar_anticipo.php', {
+        const res = await fetch('/api/taller/actualizar_anticipo.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -585,7 +585,7 @@ async function entregarTrabajo() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/entregar.php', {
+        const res = await fetch('/api/taller/entregar.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -631,7 +631,7 @@ async function cancelarTrabajo() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/taller/cancelar.php', {
+        const res = await fetch('/api/taller/cancelar.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -63,19 +63,10 @@ try {
         responder_json(false, null, 'La nueva contraseña es requerida', 'PASSWORD_NUEVA_REQUERIDA');
     }
     
-    if (empty($datos['password_confirmacion'])) {
-        responder_json(false, null, 'La confirmación de contraseña es requerida', 'PASSWORD_CONFIRMACION_REQUERIDA');
-    }
-    
     $id = (int)$datos['id'];
     $password_actual = $datos['password_actual'];
     $password_nueva = $datos['password_nueva'];
     $password_confirmacion = $datos['password_confirmacion'];
-    
-    // Verificar que las contraseñas nuevas coincidan
-    if ($password_nueva !== $password_confirmacion) {
-        responder_json(false, null, 'Las contraseñas no coinciden', 'PASSWORDS_NO_COINCIDEN');
-    }
     
     // Validar longitud de contraseña nueva
     if (strlen($password_nueva) < 6) {

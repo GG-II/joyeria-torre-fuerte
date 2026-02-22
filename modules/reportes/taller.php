@@ -213,7 +213,7 @@ async function cargarReporteTaller() {
         }
         
         // Construir URL con filtros
-        let url = '/joyeria-torre-fuerte/api/taller/listar.php?fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
+        let url = '/api/taller/listar.php?fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
         if (estado) {
             url += '&estado=' + estado;
         }

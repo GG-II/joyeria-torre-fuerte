@@ -281,7 +281,7 @@ async function cargarGanancias() {
             return;
         }
         
-        const url = '/joyeria-torre-fuerte/api/reportes/financiero.php?tipo=ganancias&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
+        const url = '/api/reportes/financiero.php?tipo=ganancias&fecha_inicio=' + fechaInicio + '&fecha_fin=' + fechaFin;
         const res = await fetch(url);
         const data = await res.json();
         
@@ -416,7 +416,7 @@ async function cargarCuentasPorCobrar() {
     try {
         mostrarCargando();
         
-        const res = await fetch('/joyeria-torre-fuerte/api/reportes/financiero.php?tipo=cuentas_por_cobrar');
+        const res = await fetch('/api/reportes/financiero.php?tipo=cuentas_por_cobrar');
         const data = await res.json();
         
         ocultarCargando();
